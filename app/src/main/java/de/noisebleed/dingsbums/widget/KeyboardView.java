@@ -23,8 +23,9 @@ import de.noisebleed.dingsbums.LetterState;
 import de.noisebleed.dingsbums.R;
 
 /**
- * Bildschirmtastatur im QWERTZ-Layout mit Umlauten. Jede Taste trägt die Farbe des besten bisher
- * bekannten Zustands ihres Buchstabens: grau, gelb oder grün.
+ * Bildschirmtastatur im QWERTZ-Layout auf einem Raster von zehn Spalten; die Umlaute stehen in einer
+ * eigenen Reihe zwischen Enter und Löschen. Jede Taste trägt die Farbe des besten bisher bekannten
+ * Zustands ihres Buchstabens: grau, gelb oder grün.
  */
 public class KeyboardView extends View {
 
@@ -38,10 +39,18 @@ public class KeyboardView extends View {
 
     private static final char ENTER = '\n';
     private static final char DELETE = '\b';
-    /** Breite der Sondertasten in Buchstabentasten. */
-    private static final float WIDE = 2f;
-    private static final String[] ROWS = {"QWERTZUIOPÜ", "ASDFGHJKLÖÄ", "\nYXCVBNM\b"};
-    private static final int COLUMNS = 11;
+    /**
+     * Breite der Sondertasten in Buchstabentasten. So breit, dass die untere Reihe acht Spalten und
+     * ein bisschen füllt — wie im Vorbild, das dort noch eine ß-Taste hat. Die fehlt hier, weil kein
+     * Wort der Listen ein ß enthält.
+     */
+    private static final float WIDE = 2.7f;
+    private static final String[] ROWS = {"QWERTZUIOP", "ASDFGHJKL", "YXCVBNM", "\nÜÖÄ\b"};
+    private static final int COLUMNS = 10;
+    /** Tasten sind etwas höher als breit. */
+    private static final float KEY_ASPECT = 1.17f;
+    /** Abstand zwischen den Tasten relativ zur Tastenbreite. */
+    private static final float GAP_RATIO = 0.05f;
 
     private static final class Key {
         final char code;
@@ -63,9 +72,9 @@ public class KeyboardView extends View {
     private final int colorAbsent;
     private final int colorPresent;
     private final int colorCorrect;
-    private final float gap;
-    private final float keyHeight;
-    private final float corner;
+    private final float maxKeyHeight;
+    private float gap;
+    private float corner;
 
     private Map<Character, LetterState> states = Collections.emptyMap();
     private Listener listener;
@@ -79,11 +88,9 @@ public class KeyboardView extends View {
         colorPresent = ContextCompat.getColor(context, R.color.state_present);
         colorCorrect = ContextCompat.getColor(context, R.color.state_correct);
         float density = getResources().getDisplayMetrics().density;
-        gap = 5 * density;
-        keyHeight = 56 * density;
-        corner = 5 * density;
+        // Auf breiten Geräten (Tablet, Querformat) nicht ins Uferlose wachsen.
+        maxKeyHeight = 64 * density;
         text.setTextAlign(Paint.Align.CENTER);
-        text.setFakeBoldText(true);
         text.setColor(ContextCompat.getColor(context, R.color.text_primary));
         icon.setStyle(Paint.Style.STROKE);
         icon.setStrokeWidth(2 * density);
@@ -110,7 +117,9 @@ public class KeyboardView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        int height = Math.round(ROWS.length * keyHeight + (ROWS.length + 1) * gap)
+        float keyWidth = keyWidthFor(width);
+        float keyHeight = Math.min(keyWidth * KEY_ASPECT, maxKeyHeight);
+        int height = Math.round(ROWS.length * keyHeight + (ROWS.length - 1) * keyWidth * GAP_RATIO)
                 + getPaddingTop() + getPaddingBottom();
         setMeasuredDimension(width, resolveSize(height, heightMeasureSpec));
     }
@@ -118,8 +127,10 @@ public class KeyboardView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         float avail = w - getPaddingLeft() - getPaddingRight();
-        float keyWidth = (avail - gap * (COLUMNS + 1)) / COLUMNS;
-        float rowHeight = (h - getPaddingTop() - getPaddingBottom() - gap * (ROWS.length + 1)) / ROWS.length;
+        float keyWidth = keyWidthFor(w);
+        gap = keyWidth * GAP_RATIO;
+        corner = keyWidth * 0.08f;
+        float rowHeight = (h - getPaddingTop() - getPaddingBottom() - gap * (ROWS.length - 1)) / ROWS.length;
         int index = 0;
         for (int r = 0; r < ROWS.length; r++) {
             String row = ROWS[r];
@@ -128,15 +139,21 @@ public class KeyboardView extends View {
                 rowWidth += widthOf(c, keyWidth) + gap;
             }
             float x = getPaddingLeft() + (avail - rowWidth) / 2;
-            float y = getPaddingTop() + gap + r * (rowHeight + gap);
+            float y = getPaddingTop() + r * (rowHeight + gap);
             for (char c : row.toCharArray()) {
                 float kw = widthOf(c, keyWidth);
                 keys.get(index++).rect.set(x, y, x + kw, y + rowHeight);
                 x += kw + gap;
             }
         }
-        text.setTextSize(Math.min(keyWidth * 0.62f, rowHeight * 0.42f));
-        buildBackspaceIcon(rowHeight * 0.36f);
+        text.setTextSize(Math.min(keyWidth * 0.6f, rowHeight * 0.5f));
+        buildBackspaceIcon(rowHeight * 0.32f);
+    }
+
+    /** Zehn Tasten und neun Lücken füllen die Breite, die Lücke ist ein fester Bruchteil der Taste. */
+    private float keyWidthFor(int width) {
+        float avail = width - getPaddingLeft() - getPaddingRight();
+        return avail / (COLUMNS + GAP_RATIO * (COLUMNS - 1));
     }
 
     private float widthOf(char c, float keyWidth) {
