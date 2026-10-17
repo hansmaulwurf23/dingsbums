@@ -6,6 +6,12 @@
     <color name="tile_border_empty">#FF3A3A3C</color>
     <color name="tile_border_filled">#FF6E6E72</color>
 
+    <!-- Eingabezeile: blau getönt, damit sie sich von grün/gelb/grau abhebt; Cursor hell. -->
+    <color name="tile_current_fill">#FF1A2330</color>
+    <color name="tile_current_border">#FF35506E</color>
+    <color name="tile_current_border_filled">#FF5A7FA8</color>
+    <color name="tile_cursor">#FF9CC3F5</color>
+
     <!-- Die drei Zustände: nicht im Wort, woanders im Wort, richtige Stelle. -->
     <color name="state_absent">#FF3A3A3C</color>
     <color name="state_present">#FFC9A92C</color>

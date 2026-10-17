@@ -106,6 +106,64 @@ public class GameTest {
         assertEquals("BÄ", copy.getCurrent());
     }
 
+    @Test
+    public void cursorOverwritesAndAdvances() {
+        Game game = new Game("TISCH");
+        typeWord(game, "STUHL");
+        assertEquals(Game.WORD_LENGTH, game.getCursor());
+        assertFalse(game.type('X'));
+        game.setCursor(1);
+        typeWord(game, "IS");
+        assertEquals("SISHL", game.getCurrent());
+        assertEquals(3, game.getCursor());
+    }
+
+    @Test
+    public void deleteClearsUnderCursorOrLeftOfIt() {
+        Game game = new Game("TISCH");
+        typeWord(game, "STUHL");
+        game.setCursor(2);
+        // Buchstabe unter dem Cursor: löschen, Cursor bleibt.
+        game.delete();
+        assertEquals("ST HL", game.getCurrent());
+        assertEquals(2, game.getCursor());
+        // Feld leer: links davon löschen und dorthin rücken.
+        game.delete();
+        assertEquals("S  HL", game.getCurrent());
+        assertEquals(1, game.getCursor());
+    }
+
+    @Test
+    public void gapsPreventSubmit() {
+        Game game = new Game("TISCH");
+        typeWord(game, "STUHL");
+        game.setCursor(2);
+        game.delete();
+        assertEquals(Game.SubmitResult.TOO_SHORT, game.submit(w -> true));
+        typeWord(game, "U");
+        assertEquals(Game.SubmitResult.ACCEPTED, game.submit(w -> true));
+        assertEquals("", game.getCurrent());
+        assertEquals(0, game.getCursor());
+    }
+
+    @Test
+    public void serializeKeepsGapsAndCursor() {
+        Game game = new Game("TISCH");
+        typeWord(game, "STU");
+        game.setCursor(1);
+        game.delete();
+        Game copy = Game.deserialize(game.serialize());
+        assertEquals("S U", copy.getCurrent());
+        assertEquals(1, copy.getCursor());
+    }
+
+    @Test
+    public void deserializeVersion10PutsCursorBehindInput() {
+        Game game = Game.deserialize("TISCH;STUHL;BÄ");
+        assertEquals("BÄ", game.getCurrent());
+        assertEquals(2, game.getCursor());
+    }
+
     private static void typeWord(Game game, String word) {
         for (char c : word.toCharArray()) {
             game.type(c);

@@ -4,7 +4,11 @@ Wordle-Klon für Android: Gesucht wird ein deutsches Wort mit fünf Buchstaben, 
 
 ## Bedienung
 
-- Auf der Bildschirmtastatur (QWERTZ mit Ä, Ö, Ü) ein Wort tippen, mit **ENTER** abschicken.
+- Auf der Bildschirmtastatur (QWERTZ, Ä/Ö/Ü in der untersten Reihe) ein Wort tippen, mit **ENTER**
+  abschicken. Die Eingabezeile ist blau hinterlegt, das Feld mit hellem Rahmen ist der Cursor.
+- **Feld antippen** setzt den Cursor dorthin: Tippen überschreibt ab da und rückt weiter. Löschen
+  entfernt den Buchstaben unter dem Cursor, ist das Feld leer, den links davon. Mit Lücken lässt
+  sich nicht abschicken. Auf einer Hardware-Tastatur gehen auch die Pfeiltasten.
 - Die Felder klappen nacheinander um und zeigen:
   **grün** — richtiger Buchstabe an der richtigen Stelle,
   **gelb** — Buchstabe kommt im Wort vor, aber woanders,

@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
@@ -24,6 +25,11 @@ import de.noisebleed.dingsbums.R;
  */
 public class BoardView extends View {
 
+    /** Antippen eines Feldes der Eingabezeile. */
+    public interface OnInputTileTapListener {
+        void onInputTileTapped(int column);
+    }
+
     private static final long FLIP_MS = 320L;
     private static final long FLIP_STAGGER_MS = 260L;
     private static final long SHAKE_MS = 420L;
@@ -39,10 +45,21 @@ public class BoardView extends View {
     private final int colorPresent;
     private final int colorCorrect;
     private final int colorText;
+    private final int colorCurrentFill;
+    private final int colorCurrentBorder;
+    private final int colorCurrentFilledBorder;
+    private final int colorCursor;
     private final float gap;
     private final float corner;
+    private final float strokeWidth;
 
     private Game game;
+    private OnInputTileTapListener tapListener;
+
+    /** Raster-Geometrie aus dem letzten {@link #layoutBoard()}, auch für die Trefferprüfung. */
+    private float tileSize;
+    private float boardLeft;
+    private float boardTop;
 
     /** Zeile, die gerade umgeklappt wird, und die Animationszeit seit Beginn; -1 = keine. */
     private int revealRow = -1;
@@ -60,14 +77,22 @@ public class BoardView extends View {
         colorPresent = ContextCompat.getColor(context, R.color.state_present);
         colorCorrect = ContextCompat.getColor(context, R.color.state_correct);
         colorText = ContextCompat.getColor(context, R.color.text_primary);
+        colorCurrentFill = ContextCompat.getColor(context, R.color.tile_current_fill);
+        colorCurrentBorder = ContextCompat.getColor(context, R.color.tile_current_border);
+        colorCurrentFilledBorder = ContextCompat.getColor(context, R.color.tile_current_border_filled);
+        colorCursor = ContextCompat.getColor(context, R.color.tile_cursor);
         float density = getResources().getDisplayMetrics().density;
         gap = 6 * density;
         corner = 3 * density;
+        strokeWidth = 2 * density;
         border.setStyle(Paint.Style.STROKE);
-        border.setStrokeWidth(2 * density);
         text.setTextAlign(Paint.Align.CENTER);
         text.setFakeBoldText(true);
         text.setColor(colorText);
+    }
+
+    public void setOnInputTileTapListener(OnInputTileTapListener listener) {
+        this.tapListener = listener;
     }
 
     public void setGame(Game game) {
@@ -145,43 +170,74 @@ public class BoardView extends View {
         }
     }
 
+    private void layoutBoard() {
+        float availW = getWidth() - getPaddingLeft() - getPaddingRight();
+        float availH = getHeight() - getPaddingTop() - getPaddingBottom();
+        float size = Math.min((availW - gap * (Game.WORD_LENGTH - 1)) / Game.WORD_LENGTH,
+                (availH - gap * (Game.MAX_GUESSES - 1)) / Game.MAX_GUESSES);
+        tileSize = Math.min(size, 72 * getResources().getDisplayMetrics().density);
+        float boardW = tileSize * Game.WORD_LENGTH + gap * (Game.WORD_LENGTH - 1);
+        float boardH = tileSize * Game.MAX_GUESSES + gap * (Game.MAX_GUESSES - 1);
+        boardLeft = getPaddingLeft() + (availW - boardW) / 2;
+        boardTop = getPaddingTop() + (availH - boardH) / 2;
+    }
+
+    /** Die Eingabezeile, solange noch gespielt wird; sonst -1. */
+    private int inputRow() {
+        return game != null && game.getStatus() == Game.Status.PLAYING ? game.getGuesses().size() : -1;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        int row = inputRow();
+        if (row < 0 || tapListener == null || isRevealing()) {
+            return super.onTouchEvent(event);
+        }
+        float top = boardTop + row * (tileSize + gap);
+        // Großzügig: die halbe Lücke ober- und unterhalb zählt noch zur Zeile.
+        if (event.getY() < top - gap / 2 || event.getY() > top + tileSize + gap / 2) {
+            return super.onTouchEvent(event);
+        }
+        int column = (int) Math.floor((event.getX() - boardLeft + gap / 2) / (tileSize + gap));
+        if (column < 0 || column >= Game.WORD_LENGTH) {
+            return super.onTouchEvent(event);
+        }
+        if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+            tapListener.onInputTileTapped(column);
+        }
+        return true;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (game == null) {
             return;
         }
-        float availW = getWidth() - getPaddingLeft() - getPaddingRight();
-        float availH = getHeight() - getPaddingTop() - getPaddingBottom();
-        float size = Math.min((availW - gap * (Game.WORD_LENGTH - 1)) / Game.WORD_LENGTH,
-                (availH - gap * (Game.MAX_GUESSES - 1)) / Game.MAX_GUESSES);
-        size = Math.min(size, 72 * getResources().getDisplayMetrics().density);
-        float boardW = size * Game.WORD_LENGTH + gap * (Game.WORD_LENGTH - 1);
-        float boardH = size * Game.MAX_GUESSES + gap * (Game.MAX_GUESSES - 1);
-        float left0 = getPaddingLeft() + (availW - boardW) / 2;
-        float top0 = getPaddingTop() + (availH - boardH) / 2;
-        text.setTextSize(size * 0.55f);
+        layoutBoard();
+        text.setTextSize(tileSize * 0.55f);
         float textOffset = -(text.descent() + text.ascent()) / 2;
 
         int submitted = game.getGuesses().size();
-        String current = game.getCurrent();
+        int input = inputRow();
         for (int row = 0; row < Game.MAX_GUESSES; row++) {
-            String letters;
-            LetterState[] eval = null;
-            if (row < submitted) {
-                letters = game.getGuesses().get(row);
-                eval = game.evaluate(row);
-            } else if (row == submitted && game.getStatus() == Game.Status.PLAYING) {
-                letters = current;
-            } else {
-                letters = "";
-            }
-            float rowShift = row == submitted ? shakeOffset : 0;
+            LetterState[] eval = row < submitted ? game.evaluate(row) : null;
+            float rowShift = row == input ? shakeOffset : 0;
             for (int col = 0; col < Game.WORD_LENGTH; col++) {
-                float left = left0 + col * (size + gap) + rowShift;
-                float top = top0 + row * (size + gap);
-                tile.set(left, top, left + size, top + size);
-                char letter = col < letters.length() ? letters.charAt(col) : 0;
+                float left = boardLeft + col * (tileSize + gap) + rowShift;
+                float top = boardTop + row * (tileSize + gap);
+                tile.set(left, top, left + tileSize, top + tileSize);
 
+                char letter = 0;
+                if (row < submitted) {
+                    letter = game.getGuesses().get(row).charAt(col);
+                } else if (row == input && game.getCurrentLetter(col) != Game.EMPTY) {
+                    letter = game.getCurrentLetter(col);
+                }
+
+                if (row == input) {
+                    drawInputTile(canvas, letter, col == game.getCursor(), textOffset);
+                    continue;
+                }
                 LetterState state = eval != null ? eval[col] : LetterState.UNKNOWN;
                 float scaleY = 1f;
                 if (row == revealRow) {
@@ -200,12 +256,29 @@ public class BoardView extends View {
         }
     }
 
+    /** Feld der Eingabezeile: getönt hinterlegt, das Cursor-Feld mit hellem, dickerem Rahmen. */
+    private void drawInputTile(Canvas canvas, char letter, boolean cursor, float textOffset) {
+        fill.setColor(colorCurrentFill);
+        canvas.drawRoundRect(tile, corner, corner, fill);
+        float width = cursor ? strokeWidth * 1.75f : strokeWidth;
+        border.setStrokeWidth(width);
+        border.setColor(cursor ? colorCursor : letter != 0 ? colorCurrentFilledBorder : colorCurrentBorder);
+        float inset = width / 2;
+        tile.inset(inset, inset);
+        canvas.drawRoundRect(tile, corner, corner, border);
+        tile.inset(-inset, -inset);
+        if (letter != 0) {
+            canvas.drawText(String.valueOf(letter), tile.centerX(), tile.centerY() + textOffset, text);
+        }
+    }
+
     private void drawTile(Canvas canvas, char letter, LetterState state, float scaleY, float textOffset) {
         canvas.save();
         canvas.scale(1f, scaleY, tile.centerX(), tile.centerY());
         if (state == LetterState.UNKNOWN) {
+            border.setStrokeWidth(strokeWidth);
             border.setColor(letter != 0 ? colorFilledBorder : colorEmptyBorder);
-            float inset = border.getStrokeWidth() / 2;
+            float inset = strokeWidth / 2;
             tile.inset(inset, inset);
             canvas.drawRoundRect(tile, corner, corner, border);
             tile.inset(-inset, -inset);

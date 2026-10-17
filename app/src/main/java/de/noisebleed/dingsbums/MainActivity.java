@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
         board = findViewById(R.id.board);
         keyboard = findViewById(R.id.keyboard);
         keyboard.setListener(this);
+        board.setOnInputTileTapListener(this::moveCursor);
 
         words = WordList.get(this);
         game = GameStore.loadOrNew(this);
@@ -60,6 +61,13 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
     @Override
     public void onLetter(char letter) {
         if (!board.isRevealing() && game.type(letter)) {
+            GameStore.save(this, game);
+            board.invalidate();
+        }
+    }
+
+    private void moveCursor(int column) {
+        if (!board.isRevealing() && game.setCursor(column)) {
             GameStore.save(this, game);
             board.invalidate();
         }
@@ -118,6 +126,14 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
         }
         if (keyCode == KeyEvent.KEYCODE_DEL) {
             onDelete();
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+            moveCursor(game.getCursor() - 1);
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            moveCursor(game.getCursor() + 1);
             return true;
         }
         char c = Character.toUpperCase((char) event.getUnicodeChar());
