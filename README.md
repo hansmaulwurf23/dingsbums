@@ -71,12 +71,62 @@ JAVA_HOME=~/.jdks/jdk-17.0.20.1+1 ./gradlew testDebugUnitTest assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
+## Download
+
+Signierte APKs hängen an den [Releases](https://gitlab.noisebleed.de/fun/dingsbums/-/releases). Das
+Projekt ist privat, der Download braucht also eine Anmeldung bei GitLab. Der Direktlink einer Version:
+
+```
+https://gitlab.noisebleed.de/api/v4/projects/57/packages/generic/dingsbums/<version>/Dingsbums-<version>.apk
+```
+
 ## Release
 
-Wie bei Focus: Der Signaturschlüssel liegt nicht im Repo, sondern in
-`~/Documents/Android/own/dingsbums/` (`keystore.properties` mit `storeFile` relativ dazu), ein
-anderer Pfad geht über `-Pdingsbums.signing=…`. Fehlt er, bleibt das Release-APK unsigniert.
+Der Signaturschlüssel liegt **nicht im Repo**, sondern in `~/Documents/Android/own/dingsbums/` — wie
+bei Focus per Syncthing zwischen den eigenen Rechnern gespiegelt und im Backup. `keystore.properties`
+daneben nennt Alias und Passwörter, `storeFile` wird relativ zu dieser Datei aufgelöst. Ein
+abweichender Pfad geht über `-Pdingsbums.signing=…`; fehlt der Schlüssel ganz, bleibt das
+Release-APK unsigniert statt den Build zu brechen.
+
+Ohne diesen Schlüssel lässt sich kein Update über eine installierte Version schieben — Verlust
+bedeutet, dass alle Nutzer erst deinstallieren müssten.
+
+Lokal bauen und prüfen:
 
 ```bash
 JAVA_HOME=~/.jdks/jdk-17.0.20.1+1 ./gradlew assembleRelease
+apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 ```
+
+## Release über CI
+
+`.gitlab-ci.yml` erledigt alles selbst, sobald ein Tag der Form `v<Ziffer>` gepusht wird: bauen,
+signieren, in die Paket-Registry laden, Release mit Asset-Link anlegen. Für Branches läuft die
+Pipeline bewusst gar nicht.
+
+```bash
+# versionCode und versionName in app/build.gradle anheben, committen
+git tag -a v1.1 -m "Dingsbums 1.1" && git push origin main && git push origin v1.1
+```
+
+Zwei Prüfungen brechen den Job absichtlich ab, statt ein kaputtes Release zu veröffentlichen: das
+Umbenennen der APK schlägt fehl, wenn mangels Schlüssel nur `app-release-unsigned.apk` entstanden
+ist, und `versionName` im APK muss zum Tag passen.
+
+### Einrichtung (erledigt)
+
+- **Runner:** der Docker-Runner „Focus App Runner“ (Tag `docker`) ist auch für dieses Projekt
+  freigeschaltet; Job-Image `mobiledevops/android-sdk-image:34.0.0-jdk17` wie bei Focus.
+- **Geschütztes Tag-Muster** `v*` (nur Maintainer) — nur dann gibt GitLab die geschützten Variablen
+  heraus.
+- **Geschützte CI-Variablen** (Settings → CI/CD → Variables):
+
+| Variable | Typ | maskiert | Inhalt |
+|---|---|---|---|
+| `ANDROID_KEYSTORE_B64` | File | nein | `base64 -w0 dingsbums-release.jks` |
+| `ANDROID_KEYSTORE_PASSWORD` | Variable | ja | `storePassword` |
+| `ANDROID_KEY_ALIAS` | Variable | nein | `dingsbums` |
+| `ANDROID_KEY_PASSWORD` | Variable | ja | `keyPassword` |
+
+Damit existiert eine zweite Kopie des Signaturschlüssels in GitLab — der Preis dafür, dass die CI
+signieren kann.
