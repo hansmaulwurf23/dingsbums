@@ -26,10 +26,15 @@ Die Listen liegen fertig in `app/src/main/assets/` und werden von `tools/build_w
 - **`guesses.txt`** (≈ 9 500 Wörter) — alle zulässigen Rateversuche: jedes Wort mit fünf Buchstaben
   aus [enz/german-wordlist](https://github.com/enz/german-wordlist) (CC0). Die Liste folgt den
   Scrabble-Regeln, enthält also auch gebeugte Formen, aber keine Namen, Abkürzungen oder Ortsnamen.
-- **`solutions.txt`** (1 800 Wörter) — die Wörter, die gesucht werden: die häufigsten Wörter aus
-  `guesses.txt` laut [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords)
-  (OpenSubtitles 2018). Weil Untertitel viel Englisch enthalten, fliegen Wörter aus dem englischen
-  Wörterbuch heraus, außer sie stehen in `tools/keep.txt`. Anstößiges, Namen und Brocken stehen in
+- **`solutions.txt`** (≈ 1 250 Wörter) — die Wörter, die gesucht werden. Nur **Grundformen**
+  (Substantiv im Nominativ Singular, Verb im Infinitiv, Adjektiv, Adverb, Präposition, …), erkannt
+  über die Wortart-Überschriften im deutschen Wiktionary (maschinenlesbarer Export von
+  [kaikki.org](https://kaikki.org/dewiktionary/Deutsch/)). Gebeugte Formen wie HÖRST oder BÄNKE
+  stehen dort als „Konjugierte/Deklinierte Form“ und fallen raus, ebenso Pronomen, Artikel und
+  Namen. Davon bleiben nur Wörter, die unter den 50 000 häufigsten aus
+  [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords) (OpenSubtitles 2018)
+  sind. Englische Lehnwörter (DADDY, STORY …) fliegen über das englische Wörterbuch raus, außer sie
+  stehen in `tools/keep.txt`. Anstößiges, Nationalitäten und seltsam wirkende Grundformen stehen in
   `tools/block.txt` — raten lassen sie sich trotzdem, nur gesucht werden sie nie.
 
 Wörter mit ß bleiben ganz draußen (groß geschrieben würde daraus SS und das Wort zu lang).
@@ -39,7 +44,10 @@ Neu erzeugen:
 ```bash
 curl -LO https://raw.githubusercontent.com/enz/german-wordlist/master/words
 curl -LO https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/de/de_50k.txt
-python3 tools/build_wordlists.py words de_50k.txt /usr/share/dict/american-english
+# Der Wiktionary-Export ist 3,4 GB groß; beim Herunterladen grob auf Fünf-Buchstaben-Einträge filtern
+curl -s https://kaikki.org/dewiktionary/Deutsch/kaikki.org-dictionary-Deutsch.jsonl \
+  | LC_ALL=C.UTF-8 grep -E '"word": ?"[[:alpha:]]{5}"' > dewikt5.jsonl
+python3 tools/build_wordlists.py words de_50k.txt dewikt5.jsonl /usr/share/dict/american-english
 ```
 
 Ein unpassendes Lösungswort fliegt am einfachsten über einen Eintrag in `tools/block.txt` raus.

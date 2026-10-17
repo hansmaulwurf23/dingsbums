@@ -9,7 +9,7 @@
     <!-- Absichtlich englisch und nicht übersetzt: so vom Autor gewünscht. -->
     <string name="about_built_by">Built by Martin and Claude with ❤️</string>
     <string name="about_version">Version: %1$s (%2$s)</string>
-    <string name="about_words">Wortliste: enz/german-wordlist (CC0), Häufigkeiten: hermitdave/FrequencyWords</string>
+    <string name="about_words">Wortliste: enz/german-wordlist (CC0), Grundformen: Wiktionary (CC BY-SA), Häufigkeiten: hermitdave/FrequencyWords</string>
 
     <string name="hint_too_short">Zu wenig Buchstaben</string>
     <string name="hint_unknown_word">Kein bekanntes Wort</string>
