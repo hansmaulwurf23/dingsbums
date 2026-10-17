@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Drei mal drei Felder im sicheren Bereich des adaptiven Icons, Farben wie im Spiel. -->
+    <path android:fillColor="#FF3A3A3C" android:pathData="M33,33h12v12h-12z" />
+    <path android:fillColor="#FFC9A92C" android:pathData="M48,33h12v12h-12z" />
+    <path android:fillColor="#FF3A3A3C" android:pathData="M63,33h12v12h-12z" />
+    <path android:fillColor="#FFC9A92C" android:pathData="M33,48h12v12h-12z" />
+    <path android:fillColor="#FF4E9A4A" android:pathData="M48,48h12v12h-12z" />
+    <path android:fillColor="#FF3A3A3C" android:pathData="M63,48h12v12h-12z" />
+    <path android:fillColor="#FF4E9A4A" android:pathData="M33,63h12v12h-12z" />
+    <path android:fillColor="#FF4E9A4A" android:pathData="M48,63h12v12h-12z" />
+    <path android:fillColor="#FF4E9A4A" android:pathData="M63,63h12v12h-12z" />
+</vector>

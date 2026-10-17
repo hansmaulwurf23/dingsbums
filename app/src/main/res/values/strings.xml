@@ -1,0 +1,42 @@
+<resources>
+    <string name="app_name">Dingsbums</string>
+
+    <string name="key_enter">ENTER</string>
+
+    <string name="new_game">Neues Wort</string>
+    <string name="statistics">Statistik</string>
+    <string name="about">About</string>
+    <!-- Absichtlich englisch und nicht übersetzt: so vom Autor gewünscht. -->
+    <string name="about_built_by">Built by Martin and Claude with ❤️</string>
+    <string name="about_version">Version: %1$s (%2$s)</string>
+    <string name="about_words">Wortliste: enz/german-wordlist (CC0), Häufigkeiten: hermitdave/FrequencyWords</string>
+
+    <string name="hint_too_short">Zu wenig Buchstaben</string>
+    <string name="hint_unknown_word">Kein bekanntes Wort</string>
+
+    <string name="give_up_title">Aufgeben?</string>
+    <string name="give_up_text">Die laufende Runde zählt in der Statistik als nicht gelöst.</string>
+    <string name="give_up_confirm">Aufgeben</string>
+    <string name="cancel">Abbrechen</string>
+
+    <string name="won_title_1">Genial!</string>
+    <string name="won_title_2">Großartig!</string>
+    <string name="won_title_3">Beeindruckend!</string>
+    <string name="won_title_4">Sehr gut!</string>
+    <string name="won_title_5">Gut gemacht!</string>
+    <string name="won_title_6">Puh, knapp!</string>
+    <string name="lost_title">Leider nicht</string>
+    <string name="solution_was">Das Wort war %1$s</string>
+    <plurals name="won_text">
+        <item quantity="one">Gelöst mit %1$d Versuch</item>
+        <item quantity="other">Gelöst mit %1$d Versuchen</item>
+    </plurals>
+
+    <string name="stat_played">Gespielt</string>
+    <string name="stat_win_percent" formatted="false">% gelöst</string>
+    <string name="stat_streak">Serie</string>
+    <string name="stat_max_streak">Beste Serie</string>
+    <string name="stat_distribution">Versuche bis zur Lösung</string>
+    <string name="stat_average">Durchschnitt: %1$s Versuche</string>
+    <string name="close">Schließen</string>
+</resources>

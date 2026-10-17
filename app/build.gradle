@@ -1,0 +1,88 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Der Signaturschlüssel liegt bewusst außerhalb des Repos. Der Ordner ~/Documents/Android/own/dingsbums/
+// wird per Syncthing zwischen den eigenen Rechnern gespiegelt und ist im Backup. Ein anderer Pfad geht
+// über -Pdingsbums.signing=… . Fehlt der Schlüssel (fremder Klon, CI ohne Secret), bleibt das
+// Release-APK unsigniert statt den Build zu brechen — Debug läuft immer.
+def signingProps = new Properties()
+def signingPropsFile = [
+        providers.gradleProperty('dingsbums.signing').orNull,
+        "${System.getProperty('user.home')}/Documents/Android/own/dingsbums/keystore.properties",
+].findResult { it != null && file(it).exists() ? file(it) : null }
+if (signingPropsFile != null) {
+    signingPropsFile.withInputStream { signingProps.load(it) }
+    // storeFile wird relativ zur Properties-Datei aufgelöst: der Syncthing-Ordner liegt auf jedem
+    // Rechner woanders (anderer Benutzername), der Schlüssel aber immer daneben.
+    def store = new File(signingProps['storeFile'] as String)
+    if (!store.absolute) {
+        store = new File(signingPropsFile.parentFile, signingProps['storeFile'] as String)
+    }
+    signingProps['storeFile'] = store.path
+}
+
+// Commit-Kennung für den About-Dialog. Bei einem Quell-Zip ohne .git-Verzeichnis fehlt sie einfach.
+def gitSha = 'unbekannt'
+try {
+    gitSha = providers.exec {
+        commandLine 'git', 'rev-parse', '--short=8', 'HEAD'
+    }.standardOutput.asText.get().trim()
+} catch (Exception ignored) {
+    logger.warn('Git-Commit nicht ermittelbar, About-Dialog zeigt "unbekannt"')
+}
+
+android {
+    namespace 'de.noisebleed.dingsbums'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "de.noisebleed.dingsbums"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+        buildConfigField 'String', 'GIT_SHA', "\"${gitSha}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    signingConfigs {
+        if (signingProps.containsKey('storeFile')) {
+            release {
+                storeFile file(signingProps['storeFile'])
+                storePassword signingProps['storePassword']
+                keyAlias signingProps['keyAlias']
+                keyPassword signingProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (signingConfigs.findByName('release') != null) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.warn('WARNUNG: keine Signierung konfiguriert, Release-APK bleibt unsigniert')
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.activity:activity:1.9.0'
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'com.google.android.material:material:1.12.0'
+
+    testImplementation 'junit:junit:4.13.2'
+}

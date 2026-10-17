@@ -1,0 +1,22 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    // PREFER_SETTINGS (not FAIL_ON_PROJECT_REPOS) because some machines (e.g. FAU's
+    // network) inject a global Gradle init script that adds its own project-level
+    // repository for a faster/allowed mirror — we still want that to work, just not
+    // override these.
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "Dingsbums"
+include ':app'

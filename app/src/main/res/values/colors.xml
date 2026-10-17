@@ -1,0 +1,20 @@
+<resources>
+    <color name="bg">#FF121213</color>
+    <color name="text_primary">#FFF2F2F2</color>
+    <color name="text_secondary">#FF9A9AA0</color>
+
+    <color name="tile_border_empty">#FF3A3A3C</color>
+    <color name="tile_border_filled">#FF6E6E72</color>
+
+    <!-- Die drei Zustände: nicht im Wort, woanders im Wort, richtige Stelle. -->
+    <color name="state_absent">#FF3A3A3C</color>
+    <color name="state_present">#FFC9A92C</color>
+    <color name="state_correct">#FF4E9A4A</color>
+
+    <color name="key">#FF818384</color>
+    <color name="key_pressed">#FFA5A6A8</color>
+    <!-- Auf der Tastatur etwas dunkler als im Raster, damit ausgeschlossene Buchstaben zurücktreten. -->
+    <color name="key_absent">#FF2C2C2E</color>
+
+    <color name="launcher_bg">#FF121213</color>
+</resources>

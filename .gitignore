@@ -1,0 +1,19 @@
+*.iml
+.gradle
+/local.properties
+# Signaturmaterial gehoert nicht ins Repo, erst recht nicht in ein oeffentliches
+/signing
+*.jks
+*.keystore
+keystore.properties
+# von der CI zur Laufzeit erzeugt
+/.ci-signing
+/build.env
+/Dingsbums-*.apk
+/.idea
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
