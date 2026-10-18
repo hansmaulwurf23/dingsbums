@@ -22,5 +22,9 @@
     <!-- Auf der Tastatur etwas dunkler als im Raster, damit ausgeschlossene Buchstaben zurücktreten. -->
     <color name="key_absent">#FF2C2C2E</color>
 
+    <!-- Dialoge: etwas heller als das Spielfeld und hell umrandet, damit sie sich abgrenzen. -->
+    <color name="dialog_bg">#FF202024</color>
+    <color name="dialog_border">#FFA8ADB6</color>
+
     <color name="launcher_bg">#FF121213</color>
 </resources>

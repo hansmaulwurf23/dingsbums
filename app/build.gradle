@@ -43,6 +43,9 @@ android {
         versionCode 3
         versionName "1.2"
         buildConfigField 'String', 'GIT_SHA', "\"${gitSha}\""
+        // Selbst-Update: GitLab-API des öffentlichen Projekts pub/dingsbums. Über die ID statt den
+        // Pfad, damit ein Umzug in eine andere Gruppe ausgelieferte Apps nicht abhängt.
+        buildConfigField 'String', 'UPDATE_API', '"https://gitlab.noisebleed.de/api/v4/projects/57"'
     }
 
     buildFeatures {

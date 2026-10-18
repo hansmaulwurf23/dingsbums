@@ -17,6 +17,7 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.util.Locale;
 
+import de.noisebleed.dingsbums.update.AppUpdater;
 import de.noisebleed.dingsbums.widget.BoardView;
 import de.noisebleed.dingsbums.widget.DistributionView;
 import de.noisebleed.dingsbums.widget.KeyboardView;
@@ -32,6 +33,11 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
     private KeyboardView keyboard;
     private WordList words;
     private Game game;
+
+    /** Pro Start nur einmal von selbst auf ein Update hinweisen, nicht bei jedem onResume. */
+    private boolean updateOffered;
+    /** Nach der Freigabe "Apps aus dieser Quelle" die Installation erneut anstoßen. */
+    private boolean installAfterPermission;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +55,24 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
         words = WordList.get(this);
         game = GameStore.loadOrNew(this);
         showGame();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (installAfterPermission) {
+            installAfterPermission = !AppUpdater.install(this);
+            return;
+        }
+        if (AppUpdater.readyVersionName(this) != null) {
+            offerUpdate();
+        } else {
+            AppUpdater.checkIfDue(this, (version, error) -> {
+                if (version != null) {
+                    offerUpdate();
+                }
+            });
+        }
     }
 
     private void showGame() {
@@ -163,6 +187,10 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
             showStats(false);
             return true;
         }
+        if (id == R.id.check_update) {
+            checkForUpdate();
+            return true;
+        }
         if (id == R.id.about) {
             showAbout();
             return true;
@@ -179,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
             startNewGame();
             return;
         }
-        new MaterialAlertDialogBuilder(this)
+        Dialogs.builder(this)
                 .setTitle(R.string.give_up_title)
                 .setMessage(R.string.give_up_text)
                 .setPositiveButton(R.string.give_up_confirm, (d, w) -> {
@@ -238,7 +266,7 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
             average.setVisibility(View.GONE);
         }
 
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this).setView(content);
+        MaterialAlertDialogBuilder builder = Dialogs.builder(this).setView(content);
         if (game.getStatus() != Game.Status.PLAYING) {
             builder.setPositiveButton(R.string.new_game, (d, w) -> startNewGame())
                     .setNegativeButton(R.string.close, null);
@@ -253,12 +281,52 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
         view.setText(String.valueOf(value));
     }
 
+    // ---------------------------------------------------------------- Update
+
+    private void checkForUpdate() {
+        if (!AppUpdater.isAllowed(this)) {
+            Snackbar.make(board, R.string.update_not_allowed, Snackbar.LENGTH_LONG)
+                    .setAnchorView(keyboard).show();
+            return;
+        }
+        Snackbar.make(board, R.string.update_checking, Snackbar.LENGTH_SHORT).setAnchorView(keyboard).show();
+        AppUpdater.check(this, (version, error) -> {
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            if (version != null) {
+                updateOffered = false;
+                offerUpdate();
+            } else {
+                String message = error != null
+                        ? getString(R.string.update_failed, error)
+                        : getString(R.string.update_none, BuildConfig.VERSION_NAME);
+                Snackbar.make(board, message, Snackbar.LENGTH_LONG).setAnchorView(keyboard).show();
+            }
+        });
+    }
+
+    private void offerUpdate() {
+        String version = AppUpdater.readyVersionName(this);
+        if (version == null || updateOffered || isFinishing() || isDestroyed()) {
+            return;
+        }
+        updateOffered = true;
+        Dialogs.builder(this)
+                .setTitle(R.string.update_available_title)
+                .setMessage(getString(R.string.update_available_text, version, BuildConfig.VERSION_NAME))
+                .setPositiveButton(R.string.update_install,
+                        (d, w) -> installAfterPermission = !AppUpdater.install(this))
+                .setNegativeButton(R.string.update_later, null)
+                .show();
+    }
+
     private void showAbout() {
         View content = getLayoutInflater().inflate(R.layout.dialog_about, null, false);
         TextView version = content.findViewById(R.id.about_version);
         version.setText(getString(R.string.about_version,
                 BuildConfig.VERSION_NAME, BuildConfig.GIT_SHA));
-        new MaterialAlertDialogBuilder(this)
+        Dialogs.builder(this)
                 .setView(content)
                 .setPositiveButton(android.R.string.ok, null)
                 .show();

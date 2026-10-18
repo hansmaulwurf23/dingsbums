@@ -77,12 +77,33 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Download
 
-Signierte APKs hängen an den [Releases](https://gitlab.noisebleed.de/fun/dingsbums/-/releases). Das
-Projekt ist privat, der Download braucht also eine Anmeldung bei GitLab. Der Direktlink einer Version:
+Signierte APKs hängen an den [Releases](https://gitlab.noisebleed.de/pub/dingsbums/-/releases). Der
+Direktlink einer Version (das Projekt ist öffentlich, es braucht keine Anmeldung):
 
 ```
 https://gitlab.noisebleed.de/api/v4/projects/57/packages/generic/dingsbums/<version>/Dingsbums-<version>.apk
 ```
+
+Zum Installieren die Datei auf dem Gerät öffnen. Android fragt einmalig nach der Erlaubnis, Apps aus
+dieser Quelle zu installieren. Voraussetzung ist Android 8 oder neuer.
+
+## Selbst-Update
+
+Ab Version 1.3 aktualisiert sich die App selbst (`update/AppUpdater`, nach dem Vorbild der EP-App):
+
+- Beim Start, höchstens alle 6 Stunden, und über *Menü → Nach Update suchen* fragt sie das neueste
+  Release bei der GitLab-API ab (`/projects/57/releases`). Die CI legt zu jedem Release eine
+  `update.json` mit versionCode und SHA-256 neben das APK.
+- Ist das Release neuer, lädt sie das APK im Hintergrund, prüft die SHA-256 und bietet es per Dialog
+  an. Installiert wird über eine PackageInstaller-Session; beim ersten Mal fragt Android nach der
+  Erlaubnis „Apps aus dieser Quelle installieren“.
+- **Statistik und laufende Runde bleiben erhalten**: ein Update mit demselben Signaturschlüssel ersetzt
+  nur den Code, die SharedPreferences bleiben unberührt. Deshalb darf der Schlüssel nie wechseln und
+  `versionCode` muss mit jedem Release steigen.
+- In Profilen, die keine Apps installieren dürfen (Amazon-Kids-Profil auf dem Fire-Tablet), sucht die
+  App gar nicht erst. Das Update im Eltern-Profil gilt für alle Profile des Geräts.
+- Die API wird über die Projekt-ID angesprochen, nicht über den Pfad — ein Umzug des Projekts hängt
+  ausgelieferte Apps also nicht ab.
 
 ## Release
 
@@ -113,12 +134,16 @@ Pipeline bewusst gar nicht.
 git tag -a v1.1 -m "Dingsbums 1.1" && git push origin main && git push origin v1.1
 ```
 
+Neben das APK legt der Job eine `update.json` für das Selbst-Update der App.
+
 Zwei Prüfungen brechen den Job absichtlich ab, statt ein kaputtes Release zu veröffentlichen: das
 Umbenennen der APK schlägt fehl, wenn mangels Schlüssel nur `app-release-unsigned.apk` entstanden
 ist, und `versionName` im APK muss zum Tag passen.
 
 ### Einrichtung (erledigt)
 
+- **Sichtbarkeit:** öffentlich in `pub/`, wie Focus — nötig, damit Selbst-Update und Download ohne
+  Anmeldung funktionieren.
 - **Runner:** der Docker-Runner „Focus App Runner“ (Tag `docker`) ist auch für dieses Projekt
   freigeschaltet; Job-Image `mobiledevops/android-sdk-image:34.0.0-jdk17` wie bei Focus.
 - **Geschütztes Tag-Muster** `v*` (nur Maintainer) — nur dann gibt GitLab die geschützten Variablen

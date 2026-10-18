@@ -13,6 +13,10 @@
         android:title="@string/new_game"
         app:showAsAction="always" />
     <item
+        android:id="@+id/check_update"
+        android:title="@string/check_update"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/about"
         android:title="@string/about"
         app:showAsAction="never" />

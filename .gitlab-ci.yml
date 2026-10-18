@@ -62,6 +62,18 @@ build-apk:
       curl --fail --silent --show-error --header "JOB-TOKEN: $CI_JOB_TOKEN" \
         --upload-file "Dingsbums-${VERSION}.apk" \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/dingsbums/${VERSION}/Dingsbums-${VERSION}.apk"
+    # Fuer das Selbst-Update der App (update/AppUpdater): versionCode und Pruefsumme neben das APK.
+    # Die App vergleicht den versionCode mit ihrem eigenen und prueft nach dem Download die SHA-256.
+    - |
+      APK_CODE=$($ANDROID_HOME/build-tools/34.0.0/aapt2 dump badging "Dingsbums-${VERSION}.apk" \
+        | grep -o "versionCode='[0-9]*'" | cut -d"'" -f2)
+      printf '{"version_code":%s,"version_name":"%s","sha256":"%s","size":%s,"apk":"%s"}\n' \
+        "$APK_CODE" "$VERSION" "$(sha256sum "Dingsbums-${VERSION}.apk" | cut -d' ' -f1)" \
+        "$(stat -c %s "Dingsbums-${VERSION}.apk")" "Dingsbums-${VERSION}.apk" > update.json
+      cat update.json
+      curl --fail --silent --show-error --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+        --upload-file update.json \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/dingsbums/${VERSION}/update.json"
     # VERSION an den naechsten Job durchreichen: im release-Schluessel expandieren nur CI-Variablen,
     # keine im script gesetzten Shell-Variablen.
     - echo "VERSION=${VERSION}" > build.env
@@ -99,7 +111,7 @@ create-release:
     assets:
       links:
         - name: "Dingsbums $VERSION (Android-APK)"
-          # Bewusst die Paket-Registry und nicht die Projekt-Uploads: sie uebersteht einen
-          # Namespace-Wechsel und funktioniert ohne Anmeldung, falls das Projekt mal oeffentlich wird.
+          # Bewusst die Paket-Registry und nicht die Projekt-Uploads: nur diese URL funktioniert bei
+          # einem oeffentlichen Projekt ohne Anmeldung und uebersteht einen Namespace-Wechsel.
           url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/dingsbums/$VERSION/Dingsbums-$VERSION.apk"
           link_type: package

@@ -39,4 +39,16 @@
     <string name="stat_distribution">Versuche bis zur Lösung</string>
     <string name="stat_average">Durchschnitt: %1$s Versuche</string>
     <string name="close">Schließen</string>
+
+    <string name="check_update">Nach Update suchen</string>
+    <string name="update_checking">Suche nach Updates …</string>
+    <string name="update_none">Dingsbums ist aktuell (Version %1$s)</string>
+    <string name="update_failed">Update-Suche fehlgeschlagen: %1$s</string>
+    <string name="update_not_allowed">In diesem Profil lassen sich keine Apps installieren. Bitte im Eltern-Profil aktualisieren.</string>
+    <string name="update_available_title">Update verfügbar</string>
+    <string name="update_available_text">Version %1$s ist bereit (installiert ist %2$s). Statistik und laufende Runde bleiben erhalten.</string>
+    <string name="update_install">Installieren</string>
+    <string name="update_later">Später</string>
+    <string name="update_allow_source">Bitte erlauben, dass Dingsbums Updates installieren darf, dann zurückkehren.</string>
+    <string name="update_install_failed">Update fehlgeschlagen: %1$s</string>
 </resources>
