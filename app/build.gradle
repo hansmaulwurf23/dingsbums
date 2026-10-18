@@ -40,8 +40,8 @@ android {
         applicationId "de.noisebleed.dingsbums"
         minSdk 26
         targetSdk 34
-        versionCode 3
-        versionName "1.2"
+        versionCode 4
+        versionName "1.3"
         buildConfigField 'String', 'GIT_SHA', "\"${gitSha}\""
         // Selbst-Update: GitLab-API des öffentlichen Projekts pub/dingsbums. Über die ID statt den
         // Pfad, damit ein Umzug in eine andere Gruppe ausgelieferte Apps nicht abhängt.
