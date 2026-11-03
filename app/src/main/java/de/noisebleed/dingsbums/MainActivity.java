@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -22,7 +23,12 @@ import de.noisebleed.dingsbums.widget.BoardView;
 import de.noisebleed.dingsbums.widget.DistributionView;
 import de.noisebleed.dingsbums.widget.KeyboardView;
 
-public class MainActivity extends AppCompatActivity implements KeyboardView.Listener {
+public class MainActivity extends AppCompatActivity
+        implements KeyboardView.Listener, BoardView.TapListener {
+
+    /** Eröffnungswörter per Doppeltipp auf die erste bzw. zweite Zeile. */
+    private static final String OPENER_1 = "AUTOS";
+    private static final String OPENER_2 = "REICH";
 
     private static final int[] WON_TITLES = {
             R.string.won_title_1, R.string.won_title_2, R.string.won_title_3,
@@ -50,7 +56,7 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
         board = findViewById(R.id.board);
         keyboard = findViewById(R.id.keyboard);
         keyboard.setListener(this);
-        board.setOnInputTileTapListener(this::moveCursor);
+        board.setTapListener(this);
 
         words = WordList.get(this);
         game = GameStore.loadOrNew(this);
@@ -90,6 +96,38 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
         }
     }
 
+    @Override
+    public void onInputTileTapped(int column) {
+        moveCursor(column);
+    }
+
+    /**
+     * Doppeltipp auf die leere erste Zeile trägt AUTOS ein, auf die leere zweite REICH; ist dabei
+     * auch die erste noch leer, kommen beide nacheinander. Eingetragen heißt abgeschickt — anders
+     * wird die zweite Zeile nie zur Eingabezeile. Schon getippte Buchstaben bleiben unangetastet.
+     */
+    @Override
+    public void onRowDoubleTapped(int row) {
+        if (board.isRevealing() || game.getStatus() != Game.Status.PLAYING
+                || !game.getCurrent().isEmpty()) {
+            return;
+        }
+        int done = game.getGuesses().size();
+        if (row == 0 && done == 0) {
+            submitWord(OPENER_1, null);
+        } else if (row == 1 && done == 0) {
+            submitWord(OPENER_1, () -> submitWord(OPENER_2, null));
+        } else if (row == 1 && done == 1) {
+            submitWord(OPENER_2, null);
+        }
+    }
+
+    private void submitWord(String word, @Nullable Runnable afterReveal) {
+        if (game.fill(word)) {
+            submit(afterReveal);
+        }
+    }
+
     private void moveCursor(int column) {
         if (!board.isRevealing() && game.setCursor(column)) {
             GameStore.save(this, game);
@@ -107,6 +145,11 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
 
     @Override
     public void onEnter() {
+        submit(null);
+    }
+
+    /** Schickt die Eingabezeile ab; {@code afterReveal} läuft nach dem Umklappen, falls weiter gespielt wird. */
+    private void submit(@Nullable Runnable afterReveal) {
         if (board.isRevealing()) {
             return;
         }
@@ -127,6 +170,8 @@ public class MainActivity extends AppCompatActivity implements KeyboardView.List
                     keyboard.setStates(game.keyStates(row + 1));
                     if (game.getStatus() != Game.Status.PLAYING) {
                         showStats(true);
+                    } else if (afterReveal != null) {
+                        afterReveal.run();
                     }
                 });
                 break;

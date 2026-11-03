@@ -9,6 +9,8 @@ Wordle-Klon für Android: Gesucht wird ein deutsches Wort mit fünf Buchstaben, 
 - **Feld antippen** setzt den Cursor dorthin: Tippen überschreibt ab da und rückt weiter. Löschen
   entfernt den Buchstaben unter dem Cursor, ist das Feld leer, den links davon. Mit Lücken lässt
   sich nicht abschicken. Auf einer Hardware-Tastatur gehen auch die Pfeiltasten.
+- **Doppeltipp** auf die leere erste Zeile schickt AUTOS ab, auf die leere zweite REICH; ist dabei
+  auch die erste noch leer, kommen beide nacheinander. Mit schon getippten Buchstaben passiert nichts.
 - Die Felder klappen nacheinander um und zeigen:
   **grün** — richtiger Buchstabe an der richtigen Stelle,
   **gelb** — Buchstabe kommt im Wort vor, aber woanders,

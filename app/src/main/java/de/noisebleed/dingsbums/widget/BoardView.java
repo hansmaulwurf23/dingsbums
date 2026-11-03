@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
@@ -25,9 +26,13 @@ import de.noisebleed.dingsbums.R;
  */
 public class BoardView extends View {
 
-    /** Antippen eines Feldes der Eingabezeile. */
-    public interface OnInputTileTapListener {
+    /** Berührungen auf dem Raster. */
+    public interface TapListener {
+        /** Ein Feld der Eingabezeile wurde angetippt. */
         void onInputTileTapped(int column);
+
+        /** Irgendeine Zeile wurde doppelt angetippt (0 = oberste). */
+        void onRowDoubleTapped(int row);
     }
 
     private static final long FLIP_MS = 320L;
@@ -54,7 +59,8 @@ public class BoardView extends View {
     private final float strokeWidth;
 
     private Game game;
-    private OnInputTileTapListener tapListener;
+    private TapListener tapListener;
+    private final GestureDetector gestures;
 
     /** Raster-Geometrie aus dem letzten {@link #layoutBoard()}, auch für die Trefferprüfung. */
     private float tileSize;
@@ -89,9 +95,35 @@ public class BoardView extends View {
         text.setTextAlign(Paint.Align.CENTER);
         text.setFakeBoldText(true);
         text.setColor(colorText);
+        gestures = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent e) {
+                return rowAt(e.getY()) >= 0;
+            }
+
+            @Override
+            public boolean onSingleTapUp(MotionEvent e) {
+                // Kommt sofort, auch beim ersten Tipp eines Doppeltipps — der setzt dann eben
+                // zusätzlich den Cursor, was in einer leeren Zeile nichts ausmacht.
+                int column = columnAt(e.getX());
+                if (rowAt(e.getY()) == inputRow() && column >= 0) {
+                    tapListener.onInputTileTapped(column);
+                }
+                return true;
+            }
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                int row = rowAt(e.getY());
+                if (row >= 0) {
+                    tapListener.onRowDoubleTapped(row);
+                }
+                return true;
+            }
+        });
     }
 
-    public void setOnInputTileTapListener(OnInputTileTapListener listener) {
+    public void setTapListener(TapListener listener) {
         this.tapListener = listener;
     }
 
@@ -187,25 +219,29 @@ public class BoardView extends View {
         return game != null && game.getStatus() == Game.Status.PLAYING ? game.getGuesses().size() : -1;
     }
 
+    /** Zeile unter {@code y}; die halbe Lücke ober- und unterhalb zählt noch dazu. -1 = daneben. */
+    private int rowAt(float y) {
+        return indexAt(y - boardTop, Game.MAX_GUESSES);
+    }
+
+    private int columnAt(float x) {
+        return indexAt(x - boardLeft, Game.WORD_LENGTH);
+    }
+
+    private int indexAt(float offset, int count) {
+        if (tileSize <= 0) {
+            return -1;
+        }
+        int index = (int) Math.floor((offset + gap / 2) / (tileSize + gap));
+        return index >= 0 && index < count ? index : -1;
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        int row = inputRow();
-        if (row < 0 || tapListener == null || isRevealing()) {
+        if (game == null || tapListener == null || isRevealing()) {
             return super.onTouchEvent(event);
         }
-        float top = boardTop + row * (tileSize + gap);
-        // Großzügig: die halbe Lücke ober- und unterhalb zählt noch zur Zeile.
-        if (event.getY() < top - gap / 2 || event.getY() > top + tileSize + gap / 2) {
-            return super.onTouchEvent(event);
-        }
-        int column = (int) Math.floor((event.getX() - boardLeft + gap / 2) / (tileSize + gap));
-        if (column < 0 || column >= Game.WORD_LENGTH) {
-            return super.onTouchEvent(event);
-        }
-        if (event.getActionMasked() == MotionEvent.ACTION_UP) {
-            tapListener.onInputTileTapped(column);
-        }
-        return true;
+        return gestures.onTouchEvent(event) || super.onTouchEvent(event);
     }
 
     @Override

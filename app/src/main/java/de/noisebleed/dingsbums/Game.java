@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -75,6 +76,16 @@ public final class Game {
             return Status.WON;
         }
         return guesses.size() >= MAX_GUESSES ? Status.LOST : Status.PLAYING;
+    }
+
+    /** Füllt die ganze Eingabezeile mit {@code word}, der Cursor steht danach dahinter. */
+    public boolean fill(String word) {
+        if (getStatus() != Status.PLAYING || word.length() != WORD_LENGTH) {
+            return false;
+        }
+        word.toUpperCase(Locale.GERMAN).getChars(0, WORD_LENGTH, current, 0);
+        cursor = WORD_LENGTH;
+        return true;
     }
 
     /** Schreibt (oder überschreibt) am Cursor und rückt ein Feld weiter. */

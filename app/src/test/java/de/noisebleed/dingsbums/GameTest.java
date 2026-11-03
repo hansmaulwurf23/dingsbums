@@ -7,6 +7,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -162,6 +163,18 @@ public class GameTest {
         Game game = Game.deserialize("TISCH;STUHL;BÄ");
         assertEquals("BÄ", game.getCurrent());
         assertEquals(2, game.getCursor());
+    }
+
+    @Test
+    public void fillReplacesInputAndPutsCursorBehind() {
+        Game game = new Game("TISCH");
+        typeWord(game, "AB");
+        game.setCursor(0);
+        assertTrue(game.fill("autos"));
+        assertEquals("AUTOS", game.getCurrent());
+        assertEquals(Game.WORD_LENGTH, game.getCursor());
+        assertFalse(game.fill("ZU"));
+        assertEquals(Game.SubmitResult.ACCEPTED, game.submit(w -> true));
     }
 
     private static void typeWord(Game game, String word) {
