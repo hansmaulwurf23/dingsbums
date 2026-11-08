@@ -4,8 +4,11 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -68,6 +71,22 @@ public final class GameStore {
             Stats.recordLoss(context);
         }
         prefs.edit().putBoolean(KEY_RECORDED, true).apply();
+    }
+
+    /** Zuletzt gelöste Wörter, älteste zuerst — für den Export der Statistik. */
+    public static List<String> recentWords(Context context) {
+        return new ArrayList<>(recent(context));
+    }
+
+    /** Wörter aus einem Import vormerken, damit sie nicht gleich wieder drankommen. */
+    public static void addRecent(Context context, Collection<String> words) {
+        // Importierte Wörter sind älter als die auf diesem Gerät gespielten, also nach vorn.
+        Set<String> merged = new LinkedHashSet<>(words);
+        merged.addAll(recent(context));
+        while (merged.size() > RECENT_MAX) {
+            merged.remove(merged.iterator().next());
+        }
+        prefs(context).edit().putString(KEY_RECENT, String.join(",", merged)).apply();
     }
 
     private static Set<String> recent(Context context) {

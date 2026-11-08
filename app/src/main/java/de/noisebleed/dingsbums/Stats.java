@@ -65,6 +65,21 @@ public final class Stats {
                 .apply();
     }
 
+    /** Übernimmt eine importierte Statistik anstelle der bisherigen. */
+    public static void replace(Context context, StatsBackup backup) {
+        SharedPreferences.Editor editor = prefs(context).edit()
+                .clear()
+                .putInt(KEY_PLAYED, backup.played)
+                .putInt(KEY_WON, backup.won)
+                .putInt(KEY_STREAK, backup.streak)
+                .putInt(KEY_MAX_STREAK, backup.maxStreak)
+                .putInt(KEY_LAST_GUESSES, backup.lastGuesses);
+        for (int i = 0; i < backup.distribution.length; i++) {
+            editor.putInt(KEY_DIST + (i + 1), backup.distribution[i]);
+        }
+        editor.apply();
+    }
+
     private static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }

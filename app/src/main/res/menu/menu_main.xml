@@ -13,6 +13,14 @@
         android:title="@string/new_game"
         app:showAsAction="always" />
     <item
+        android:id="@+id/export_stats"
+        android:title="@string/export_stats"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/import_stats"
+        android:title="@string/import_stats"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/check_update"
         android:title="@string/check_update"
         app:showAsAction="never" />

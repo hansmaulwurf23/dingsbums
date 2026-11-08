@@ -40,6 +40,23 @@
     <string name="stat_average">Durchschnitt: %1$s Versuche</string>
     <string name="close">Schließen</string>
 
+    <string name="export_stats">Statistik exportieren</string>
+    <string name="import_stats">Statistik importieren</string>
+    <string name="export_done">Statistik exportiert</string>
+    <string name="export_failed">Export fehlgeschlagen: %1$s</string>
+    <string name="import_replace_title">Statistik ersetzen?</string>
+    <plurals name="import_replace_text">
+        <item quantity="one">Die Statistik auf diesem Gerät (%1$d Spiel) wird durch die importierte (%2$d Spiele) ersetzt.</item>
+        <item quantity="other">Die Statistik auf diesem Gerät (%1$d Spiele) wird durch die importierte (%2$d Spiele) ersetzt.</item>
+    </plurals>
+    <string name="import_replace_confirm">Ersetzen</string>
+    <plurals name="import_done">
+        <item quantity="one">Statistik importiert: %1$d Spiel</item>
+        <item quantity="other">Statistik importiert: %1$d Spiele</item>
+    </plurals>
+    <string name="import_failed">Import fehlgeschlagen: %1$s</string>
+    <string name="no_file_picker">Auf diesem Gerät lassen sich keine Dateien auswählen.</string>
+
     <string name="check_update">Nach Update suchen</string>
     <string name="update_checking">Suche nach Updates …</string>
     <string name="update_none">Dingsbums ist aktuell (Version %1$s)</string>

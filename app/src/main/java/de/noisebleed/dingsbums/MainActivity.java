@@ -1,12 +1,17 @@
 package de.noisebleed.dingsbums;
 
+import android.content.ActivityNotFoundException;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -16,6 +21,15 @@ import androidx.appcompat.widget.Toolbar;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 
+import org.json.JSONException;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 import de.noisebleed.dingsbums.update.AppUpdater;
@@ -34,6 +48,13 @@ public class MainActivity extends AppCompatActivity
             R.string.won_title_1, R.string.won_title_2, R.string.won_title_3,
             R.string.won_title_4, R.string.won_title_5, R.string.won_title_6,
     };
+
+    private static final String TAG = "MainActivity";
+
+    private final ActivityResultLauncher<String> exportLauncher = registerForActivityResult(
+            new ActivityResultContracts.CreateDocument("application/json"), this::exportTo);
+    private final ActivityResultLauncher<String[]> importLauncher = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(), this::importFrom);
 
     private BoardView board;
     private KeyboardView keyboard;
@@ -232,6 +253,20 @@ public class MainActivity extends AppCompatActivity
             showStats(false);
             return true;
         }
+        try {
+            if (id == R.id.export_stats) {
+                requestExport();
+                return true;
+            }
+            if (id == R.id.import_stats) {
+                requestImport();
+                return true;
+            }
+        } catch (ActivityNotFoundException e) {
+            // Kein Dateiauswahl-Dialog, z. B. in einem eingeschränkten Kinderprofil.
+            message(getString(R.string.no_file_picker));
+            return true;
+        }
         if (id == R.id.check_update) {
             checkForUpdate();
             return true;
@@ -324,6 +359,80 @@ public class MainActivity extends AppCompatActivity
     private static void setStat(View content, int id, int value) {
         TextView view = content.findViewById(id);
         view.setText(String.valueOf(value));
+    }
+
+    // ---------------------------------------------------------------- Statistik exportieren/importieren
+
+    private void requestExport() {
+        String date = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date());
+        exportLauncher.launch("dingsbums-statistik-" + date + ".json");
+    }
+
+    private void requestImport() {
+        // Manche Dateimanager kennen .json nicht als application/json.
+        importLauncher.launch(new String[]{"application/json", "text/plain", "application/octet-stream"});
+    }
+
+    private void exportTo(@Nullable Uri uri) {
+        if (uri == null) {
+            return;
+        }
+        try (OutputStream out = getContentResolver().openOutputStream(uri, "wt")) {
+            if (out == null) {
+                throw new IOException("Datei nicht beschreibbar");
+            }
+            StatsBackup backup = StatsBackup.of(Stats.load(this), GameStore.recentWords(this));
+            out.write(backup.toJson().toString(2).getBytes(StandardCharsets.UTF_8));
+            message(getString(R.string.export_done));
+        } catch (IOException | JSONException | SecurityException e) {
+            Log.e(TAG, "Export fehlgeschlagen", e);
+            message(getString(R.string.export_failed, e.getMessage()));
+        }
+    }
+
+    private void importFrom(@Nullable Uri uri) {
+        if (uri == null) {
+            return;
+        }
+        StatsBackup backup;
+        try (InputStream in = getContentResolver().openInputStream(uri)) {
+            if (in == null) {
+                throw new IOException("Datei nicht lesbar");
+            }
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            byte[] chunk = new byte[8192];
+            for (int n; (n = in.read(chunk)) > 0; ) {
+                buffer.write(chunk, 0, n);
+            }
+            backup = StatsBackup.fromJson(buffer.toString("UTF-8"));
+        } catch (IOException | JSONException | SecurityException e) {
+            Log.e(TAG, "Import fehlgeschlagen", e);
+            message(getString(R.string.import_failed, e.getMessage()));
+            return;
+        }
+        int current = Stats.load(this).played;
+        if (current == 0) {
+            applyImport(backup);
+            return;
+        }
+        Dialogs.builder(this)
+                .setTitle(R.string.import_replace_title)
+                .setMessage(getResources().getQuantityString(R.plurals.import_replace_text, current,
+                        current, backup.played))
+                .setPositiveButton(R.string.import_replace_confirm, (d, w) -> applyImport(backup))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void applyImport(StatsBackup backup) {
+        Stats.replace(this, backup);
+        GameStore.addRecent(this, backup.recent);
+        message(getResources().getQuantityString(R.plurals.import_done, backup.played, backup.played));
+        showStats(false);
+    }
+
+    private void message(String text) {
+        Snackbar.make(board, text, Snackbar.LENGTH_LONG).setAnchorView(keyboard).show();
     }
 
     // ---------------------------------------------------------------- Update
