@@ -138,3 +138,7 @@ gesetzt; damit liegt eine zweite Kopie des Schlüssels bei GitHub.
 # versionCode und versionName in app/build.gradle anheben, committen
 git tag -a v1.6 -m "Dingsbums 1.6" -m "- Was sich geändert hat" && git push origin main v1.6
 ```
+
+## Lizenz
+
+Der Code steht unter der [MIT-Lizenz](LICENSE).
