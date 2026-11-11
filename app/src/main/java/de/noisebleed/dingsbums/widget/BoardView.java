@@ -106,7 +106,7 @@ public class BoardView extends View {
                 // Kommt sofort, auch beim ersten Tipp eines Doppeltipps — der setzt dann eben
                 // zusätzlich den Cursor, was in einer leeren Zeile nichts ausmacht.
                 int column = columnAt(e.getX());
-                if (rowAt(e.getY()) == inputRow() && column >= 0) {
+                if (!isRevealing() && rowAt(e.getY()) == inputRow() && column >= 0) {
                     tapListener.onInputTileTapped(column);
                 }
                 return true;
@@ -115,7 +115,7 @@ public class BoardView extends View {
             @Override
             public boolean onDoubleTap(MotionEvent e) {
                 int row = rowAt(e.getY());
-                if (row >= 0) {
+                if (!isRevealing() && row >= 0) {
                     tapListener.onRowDoubleTapped(row);
                 }
                 return true;
@@ -238,9 +238,13 @@ public class BoardView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (game == null || tapListener == null || isRevealing()) {
+        if (game == null || tapListener == null) {
             return super.onTouchEvent(event);
         }
+        // Auch während des Umklappens jedes Ereignis durchreichen und erst in den Rückrufen
+        // ignorieren: Ein Doppeltipp startet das Umklappen schon beim zweiten Aufsetzen. Bekäme der
+        // GestureDetector das zugehörige Loslassen nicht mehr, hielte er den nächsten Tipp noch für
+        // einen Teil des Doppeltipps und verschluckte ihn.
         return gestures.onTouchEvent(event) || super.onTouchEvent(event);
     }
 
