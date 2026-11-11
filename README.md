@@ -2,6 +2,8 @@
 
 Wordle-Klon für Android: Gesucht wird ein deutsches Wort mit fünf Buchstaben, sechs Versuche hat man.
 
+Eine bebilderte Kurzbeschreibung steht in [`docs/README.md`](docs/README.md).
+
 ## Bedienung
 
 - Auf der Bildschirmtastatur (QWERTZ, Ä/Ö/Ü in der untersten Reihe) ein Wort tippen, mit **ENTER**
@@ -32,7 +34,7 @@ Die Listen liegen fertig in `app/src/main/assets/` und werden von `tools/build_w
 - **`guesses.txt`** (≈ 9 500 Wörter) — alle zulässigen Rateversuche: jedes Wort mit fünf Buchstaben
   aus [enz/german-wordlist](https://github.com/enz/german-wordlist) (CC0). Die Liste folgt den
   Scrabble-Regeln, enthält also auch gebeugte Formen, aber keine Namen, Abkürzungen oder Ortsnamen.
-- **`solutions.txt`** (≈ 1 250 Wörter) — die Wörter, die gesucht werden. Nur **Grundformen**
+- **`solutions.txt`** (≈ 1 200 Wörter) — die Wörter, die gesucht werden. Nur **Grundformen**
   (Substantiv im Nominativ Singular, Verb im Infinitiv, Adjektiv, Adverb, Präposition, …), erkannt
   über die Wortart-Überschriften im deutschen Wiktionary (maschinenlesbarer Export von
   [kaikki.org](https://kaikki.org/dewiktionary/Deutsch/)). Gebeugte Formen wie HÖRST oder BÄNKE
@@ -40,8 +42,8 @@ Die Listen liegen fertig in `app/src/main/assets/` und werden von `tools/build_w
   Namen. Davon bleiben nur Wörter, die unter den 50 000 häufigsten aus
   [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords) (OpenSubtitles 2018)
   sind. Englische Lehnwörter (DADDY, STORY …) fliegen über das englische Wörterbuch raus, außer sie
-  stehen in `tools/keep.txt`. Anstößiges, Nationalitäten und seltsam wirkende Grundformen stehen in
-  `tools/block.txt` — raten lassen sie sich trotzdem, nur gesucht werden sie nie.
+  stehen in `tools/keep.txt`. Anstößiges, für Kinder Ungeeignetes, Nationalitäten und seltsam wirkende
+  Grundformen stehen in `tools/block.txt` — raten lassen sie sich trotzdem, nur gesucht werden sie nie.
 
 Wörter mit ß bleiben ganz draußen (groß geschrieben würde daraus SS und das Wort zu lang).
 
