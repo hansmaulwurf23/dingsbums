@@ -70,7 +70,7 @@ Ein unpassendes Lösungswort fliegt am einfachsten über einen Eintrag in `tools
 
 ## Bauen und installieren
 
-Gebraucht wird ein **JDK 17** (siehe Focus-README; das JBR aus Android Studio ist zu neu):
+Gebraucht wird ein **JDK 17** (das JBR aus aktuellen Android-Studio-Versionen ist zu neu für Gradle 8.7):
 
 ```bash
 JAVA_HOME=~/.jdks/jdk-17.0.20.1+1 ./gradlew testDebugUnitTest assembleDebug
@@ -79,23 +79,19 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Download
 
-Signierte APKs hängen an den [Releases](https://gitlab.noisebleed.de/pub/dingsbums/-/releases). Der
-Direktlink einer Version (das Projekt ist öffentlich, es braucht keine Anmeldung):
-
-```
-https://gitlab.noisebleed.de/api/v4/projects/57/packages/generic/dingsbums/<version>/Dingsbums-<version>.apk
-```
+Signierte APKs hängen an den [Releases](https://github.com/hansmaulwurf23/dingsbums/releases).
 
 Zum Installieren die Datei auf dem Gerät öffnen. Android fragt einmalig nach der Erlaubnis, Apps aus
-dieser Quelle zu installieren. Voraussetzung ist Android 8 oder neuer.
+dieser Quelle zu installieren. Voraussetzung ist Android 8 oder neuer; auf dem Fire-Tablet im
+Eltern-Profil installieren und die App dann für das Kinderprofil freigeben.
 
 ## Selbst-Update
 
-Ab Version 1.3 aktualisiert sich die App selbst (`update/AppUpdater`, nach dem Vorbild der EP-App):
+Die App aktualisiert sich selbst (`update/AppUpdater`):
 
 - Beim Start, höchstens alle 6 Stunden, und über *Menü → Nach Update suchen* fragt sie das neueste
-  Release bei der GitLab-API ab (`/projects/57/releases`). Die CI legt zu jedem Release eine
-  `update.json` mit versionCode und SHA-256 neben das APK.
+  Release bei der GitHub-API ab (`/repos/hansmaulwurf23/dingsbums/releases/latest`). Jedes Release
+  hat neben dem APK eine `update.json` mit versionCode und SHA-256.
 - Ist das Release neuer, lädt sie das APK im Hintergrund, prüft die SHA-256 und bietet es per Dialog
   an. Installiert wird über eine PackageInstaller-Session; beim ersten Mal fragt Android nach der
   Erlaubnis „Apps aus dieser Quelle installieren“.
@@ -104,19 +100,23 @@ Ab Version 1.3 aktualisiert sich die App selbst (`update/AppUpdater`, nach dem V
   `versionCode` muss mit jedem Release steigen.
 - In Profilen, die keine Apps installieren dürfen (Amazon-Kids-Profil auf dem Fire-Tablet), sucht die
   App gar nicht erst. Das Update im Eltern-Profil gilt für alle Profile des Geräts.
-- Die API wird über die Projekt-ID angesprochen, nicht über den Pfad — ein Umzug des Projekts hängt
-  ausgelieferte Apps also nicht ab.
+
+Die API-Adresse steht in `app/build.gradle` (`UPDATE_API`). Ein Umbenennen des Repos leitet GitHub
+weiter; wird es gelöscht oder privat, finden ausgelieferte Apps keine Updates mehr.
+
+Bis Version 1.4 lag das Projekt auf gitlab.noisebleed.de (`pub/dingsbums`, Projekt-ID 57), und die
+Apps fragten dort. Version 1.5 ist deshalb zusätzlich noch dort erschienen: Wer sie installiert, sucht
+ab dann auf GitHub. Das GitLab-Projekt ist archiviert, seine Releases bleiben abrufbar.
 
 ## Release
 
-Der Signaturschlüssel liegt **nicht im Repo**, sondern in `~/Documents/Android/own/dingsbums/` — wie
-bei Focus per Syncthing zwischen den eigenen Rechnern gespiegelt und im Backup. `keystore.properties`
-daneben nennt Alias und Passwörter, `storeFile` wird relativ zu dieser Datei aufgelöst. Ein
-abweichender Pfad geht über `-Pdingsbums.signing=…`; fehlt der Schlüssel ganz, bleibt das
-Release-APK unsigniert statt den Build zu brechen.
+Signaturschlüssel und `keystore.properties` liegen **nicht im Repo**, sondern in
+`~/Documents/Android/own/dingsbums/` (per Syncthing gespiegelt und im Backup); `storeFile` wird
+relativ zur Properties-Datei aufgelöst. Ein abweichender Pfad geht über `-Pdingsbums.signing=…`;
+fehlt der Schlüssel ganz, bleibt das Release-APK unsigniert statt den Build zu brechen.
 
 Ohne diesen Schlüssel lässt sich kein Update über eine installierte Version schieben — Verlust
-bedeutet, dass alle Nutzer erst deinstallieren müssten.
+bedeutet, dass alle Nutzer erst deinstallieren müssten und ihre Statistik verlören.
 
 Lokal bauen und prüfen:
 
@@ -125,39 +125,16 @@ JAVA_HOME=~/.jdks/jdk-17.0.20.1+1 ./gradlew assembleRelease
 apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 ```
 
-## Release über CI
+`.github/workflows/release.yml` testet, baut, signiert und veröffentlicht, sobald ein Tag `v<Ziffer>`
+gepusht wird, und hängt `update.json` neben das APK. Der Text des annotierten Tags (ohne die erste
+Zeile) wird zur Release-Beschreibung. Zwei Prüfungen brechen absichtlich ab, statt ein kaputtes
+Release zu veröffentlichen: ein unsigniertes APK und ein `versionName`, der nicht zum Tag passt.
 
-`.gitlab-ci.yml` erledigt alles selbst, sobald ein Tag der Form `v<Ziffer>` gepusht wird: bauen,
-signieren, in die Paket-Registry laden, Release mit Asset-Link anlegen. Für Branches läuft die
-Pipeline bewusst gar nicht.
+Die Repository-Secrets `ANDROID_KEYSTORE_B64` (`base64 -w0 dingsbums-release.jks`),
+`ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`dingsbums`) und `ANDROID_KEY_PASSWORD` sind
+gesetzt; damit liegt eine zweite Kopie des Schlüssels bei GitHub.
 
 ```bash
 # versionCode und versionName in app/build.gradle anheben, committen
-git tag -a v1.1 -m "Dingsbums 1.1" && git push origin main && git push origin v1.1
+git tag -a v1.6 -m "Dingsbums 1.6" -m "- Was sich geändert hat" && git push origin main v1.6
 ```
-
-Neben das APK legt der Job eine `update.json` für das Selbst-Update der App.
-
-Zwei Prüfungen brechen den Job absichtlich ab, statt ein kaputtes Release zu veröffentlichen: das
-Umbenennen der APK schlägt fehl, wenn mangels Schlüssel nur `app-release-unsigned.apk` entstanden
-ist, und `versionName` im APK muss zum Tag passen.
-
-### Einrichtung (erledigt)
-
-- **Sichtbarkeit:** öffentlich in `pub/`, wie Focus — nötig, damit Selbst-Update und Download ohne
-  Anmeldung funktionieren.
-- **Runner:** der Docker-Runner „Focus App Runner“ (Tag `docker`) ist auch für dieses Projekt
-  freigeschaltet; Job-Image `mobiledevops/android-sdk-image:34.0.0-jdk17` wie bei Focus.
-- **Geschütztes Tag-Muster** `v*` (nur Maintainer) — nur dann gibt GitLab die geschützten Variablen
-  heraus.
-- **Geschützte CI-Variablen** (Settings → CI/CD → Variables):
-
-| Variable | Typ | maskiert | Inhalt |
-|---|---|---|---|
-| `ANDROID_KEYSTORE_B64` | File | nein | `base64 -w0 dingsbums-release.jks` |
-| `ANDROID_KEYSTORE_PASSWORD` | Variable | ja | `storePassword` |
-| `ANDROID_KEY_ALIAS` | Variable | nein | `dingsbums` |
-| `ANDROID_KEY_PASSWORD` | Variable | ja | `keyPassword` |
-
-Damit existiert eine zweite Kopie des Signaturschlüssels in GitLab — der Preis dafür, dass die CI
-signieren kann.

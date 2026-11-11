@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Selbst-Update (update/AppUpdater): neuestes Release von GitLab laden und installieren. -->
+    <!-- Selbst-Update (update/AppUpdater): neuestes Release von GitHub laden und installieren. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 

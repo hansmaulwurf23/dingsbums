@@ -40,9 +40,9 @@ import de.noisebleed.dingsbums.R;
 
 /**
  * Selbst-Update nach dem Vorbild der EP-App, nur ohne eigenes Backend: das neueste Release kommt
- * aus der GitLab-API des (öffentlichen) Projekts, daneben legt die CI je Version eine
- * {@code update.json} mit versionCode und SHA-256 in die Paket-Registry. Eine neuere Version wird
- * im Hintergrund geladen, geprüft und dann über eine PackageInstaller-Session installiert.
+ * aus der GitHub-API des öffentlichen Repos, die CI hängt an jedes Release neben das APK eine
+ * {@code update.json} mit versionCode und SHA-256. Eine neuere Version wird im Hintergrund geladen,
+ * geprüft und dann über eine PackageInstaller-Session installiert.
  *
  * Statistik und Spielstand überstehen das: ein Update mit demselben Signaturschlüssel ersetzt nur
  * den Code, die SharedPreferences der App bleiben unberührt.
@@ -196,36 +196,44 @@ public final class AppUpdater {
         String apk;
     }
 
-    /** Neuestes Release laut GitLab, mit den Angaben aus dessen update.json; null wenn keins. */
+    /** Neuestes Release laut GitHub, mit den Angaben aus dessen update.json; null wenn keins. */
     @Nullable
     private static Release fetchLatest() throws IOException, JSONException {
-        // Die Liste ist nach Veröffentlichung sortiert, das erste ist das neueste Release.
-        JSONArray releases = new JSONArray(readText(BuildConfig.UPDATE_API + "/releases?per_page=1"));
-        if (releases.length() == 0) {
-            return null;
-        }
-        String tag = releases.getJSONObject(0).optString("tag_name", "");
-        if (!tag.startsWith("v")) {
-            return null;
-        }
-        String version = tag.substring(1);
-        JSONObject info;
+        // "latest" ist das neueste veröffentlichte Release ohne Entwürfe und Vorabversionen.
+        JSONObject latest;
         try {
-            info = new JSONObject(readText(packageUrl(version, "update.json")));
+            latest = new JSONObject(readText(BuildConfig.UPDATE_API + "/releases/latest"));
         } catch (NotFoundException e) {
-            // Releases vor 1.3 haben noch keine update.json — die sind ohnehin nicht neuer.
             return null;
         }
+        JSONArray assets = latest.optJSONArray("assets");
+        String infoUrl = assetUrl(assets, "update.json");
+        if (infoUrl == null) {
+            // Ein Release ohne update.json (von Hand angelegt) wird nicht angeboten.
+            return null;
+        }
+        JSONObject info = new JSONObject(readText(infoUrl));
         Release release = new Release();
         release.versionCode = info.getInt("version_code");
         release.versionName = info.getString("version_name");
         release.sha256 = info.getString("sha256");
-        release.apk = packageUrl(version, info.getString("apk"));
-        return release;
+        release.apk = assetUrl(assets, info.getString("apk"));
+        return release.apk != null ? release : null;
     }
 
-    private static String packageUrl(String version, String file) {
-        return BuildConfig.UPDATE_API + "/packages/generic/dingsbums/" + version + "/" + file;
+    /** Download-Adresse des Release-Anhangs mit diesem Namen, oder null. */
+    @Nullable
+    private static String assetUrl(@Nullable JSONArray assets, String name) throws JSONException {
+        if (assets == null) {
+            return null;
+        }
+        for (int i = 0; i < assets.length(); i++) {
+            JSONObject asset = assets.getJSONObject(i);
+            if (name.equals(asset.optString("name"))) {
+                return asset.getString("browser_download_url");
+            }
+        }
+        return null;
     }
 
     private static void download(Context context, Release release) throws IOException {
@@ -273,6 +281,11 @@ public final class AppUpdater {
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.setConnectTimeout(TIMEOUT_MS);
         connection.setReadTimeout(TIMEOUT_MS);
+        // Die GitHub-API lehnt Anfragen ohne User-Agent ab. Release-Anhänge leiten auf einen
+        // anderen https-Host um; dem folgt HttpURLConnection von selbst.
+        connection.setRequestProperty("User-Agent", "Dingsbums/" + BuildConfig.VERSION_NAME);
+        connection.setRequestProperty("Accept", url.startsWith(BuildConfig.UPDATE_API)
+                ? "application/vnd.github+json" : "*/*");
         int code = connection.getResponseCode();
         if (code == HttpURLConnection.HTTP_NOT_FOUND) {
             connection.disconnect();
