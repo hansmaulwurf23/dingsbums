@@ -40,8 +40,8 @@ android {
         applicationId "de.noisebleed.dingsbums"
         minSdk 26
         targetSdk 34
-        versionCode 6
-        versionName "1.5"
+        versionCode 7
+        versionName "1.6"
         buildConfigField 'String', 'GIT_SHA', "\"${gitSha}\""
         // Selbst-Update: GitHub-API des öffentlichen Repos hansmaulwurf23/dingsbums. Ein Umbenennen
         // des Repos leitet GitHub weiter, ein Löschen hängt ausgelieferte Apps ab.
