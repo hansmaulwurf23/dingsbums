@@ -9,6 +9,8 @@ solutions.txt — die Wörter, die gesucht werden: nur Grundformen (Substantiv i
                 (OpenSubtitles 2018, häufigste 50 000) vorkommen. Weil Untertitel und Wiktionary
                 viele englische Lehnwörter enthalten, fliegen Wörter aus dem englischen Wörterbuch
                 raus, außer sie stehen in keep.txt; Anstößiges und Namen stehen in block.txt.
+kids.txt      — die Lösungswörter für den Kindermodus: die aus solutions.txt, die auch in der von
+                Hand gepflegten Liste tools/kids.txt stehen (Grundschulwortschatz).
 
 Aufruf: tools/build_wordlists.py <german-wordlist/words> <de_50k.txt> <kaikki-Deutsch.jsonl>
                                  [/usr/share/dict/american-english]
@@ -34,8 +36,9 @@ assets = os.path.join(here, "..", "app", "src", "main", "assets")
 
 
 def read_set(name):
+    """Wörter aus einer Datei in tools/, Zeilen mit # am Anfang sind Kommentar."""
     with open(os.path.join(here, name), encoding="utf-8") as f:
-        return {w.strip().upper() for w in f.read().split() if not w.startswith("#")}
+        return {w.upper() for line in f if not line.lstrip().startswith("#") for w in line.split()}
 
 
 def read_lemmas(wiktionary):
@@ -70,10 +73,17 @@ def main(wordlist, frequencies, wiktionary, english="/usr/share/dict/american-en
                 continue
             solutions.append(word)
 
-    for name, words in (("guesses.txt", sorted(guesses)), ("solutions.txt", sorted(solutions))):
+    kids = read_set("kids.txt")
+    kid_solutions = sorted(set(solutions) & kids)
+    for word in sorted(kids - set(solutions)):
+        print(f"kids.txt: {word} ist kein Lösungswort, bleibt draußen", file=sys.stderr)
+
+    for name, words in (("guesses.txt", sorted(guesses)), ("solutions.txt", sorted(solutions)),
+                        ("kids.txt", kid_solutions)):
         with open(os.path.join(assets, name), "w", encoding="utf-8") as f:
             f.write("\n".join(words) + "\n")
-    print(f"{len(guesses)} zulässige Wörter, {len(solutions)} Lösungswörter")
+    print(f"{len(guesses)} zulässige Wörter, {len(solutions)} Lösungswörter, "
+          f"davon {len(kid_solutions)} für den Kindermodus")
 
 
 if __name__ == "__main__":

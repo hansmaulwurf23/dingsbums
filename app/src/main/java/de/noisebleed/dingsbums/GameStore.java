@@ -42,7 +42,7 @@ public final class GameStore {
 
     public static Game newGame(Context context) {
         Set<String> recent = recent(context);
-        Game game = new Game(WordList.get(context).randomSolution(recent));
+        Game game = new Game(WordList.get(context).randomSolution(recent, Settings.kidsMode(context)));
         recent.add(game.getSolution());
         while (recent.size() > RECENT_MAX) {
             recent.remove(recent.iterator().next());

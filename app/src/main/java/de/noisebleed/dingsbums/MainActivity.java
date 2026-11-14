@@ -3,11 +3,16 @@ package de.noisebleed.dingsbums;
 import android.content.ActivityNotFoundException;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.InputFilter;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -18,8 +23,12 @@ import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import androidx.appcompat.app.AlertDialog;
+
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.TextInputLayout;
 
 import org.json.JSONException;
 
@@ -40,10 +49,6 @@ import de.noisebleed.dingsbums.widget.KeyboardView;
 public class MainActivity extends AppCompatActivity
         implements KeyboardView.Listener, BoardView.TapListener {
 
-    /** Eröffnungswörter per Doppeltipp auf die erste bzw. zweite Zeile. */
-    private static final String OPENER_1 = "AUTOS";
-    private static final String OPENER_2 = "REICH";
-
     private static final int[] WON_TITLES = {
             R.string.won_title_1, R.string.won_title_2, R.string.won_title_3,
             R.string.won_title_4, R.string.won_title_5, R.string.won_title_6,
@@ -56,6 +61,7 @@ public class MainActivity extends AppCompatActivity
     private final ActivityResultLauncher<String[]> importLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(), this::importFrom);
 
+    private Toolbar toolbar;
     private BoardView board;
     private KeyboardView keyboard;
     private WordList words;
@@ -71,7 +77,7 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         board = findViewById(R.id.board);
@@ -103,6 +109,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void showGame() {
+        toolbar.setSubtitle(Settings.kidsMode(this) ? getString(R.string.kids_mode_subtitle) : null);
         board.setGame(game);
         keyboard.setStates(game.keyStates(game.getGuesses().size()));
     }
@@ -123,8 +130,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     /**
-     * Doppeltipp auf die leere erste Zeile trägt AUTOS ein, auf die leere zweite REICH; ist dabei
-     * auch die erste noch leer, kommen beide nacheinander. Eingetragen heißt abgeschickt — anders
+     * Doppeltipp auf die leere erste Zeile trägt das erste Startwort ein (Voreinstellung AUTOS), auf
+     * die leere zweite das zweite (REICH); ist dabei auch die erste noch leer, kommen beide nacheinander. Eingetragen heißt abgeschickt — anders
      * wird die zweite Zeile nie zur Eingabezeile. Schon getippte Buchstaben bleiben unangetastet.
      */
     @Override
@@ -134,12 +141,14 @@ public class MainActivity extends AppCompatActivity
             return;
         }
         int done = game.getGuesses().size();
+        String opener1 = Settings.opener1(this);
+        String opener2 = Settings.opener2(this);
         if (row == 0 && done == 0) {
-            submitWord(OPENER_1, null);
+            submitWord(opener1, null);
         } else if (row == 1 && done == 0) {
-            submitWord(OPENER_1, () -> submitWord(OPENER_2, null));
+            submitWord(opener1, () -> submitWord(opener2, null));
         } else if (row == 1 && done == 1) {
-            submitWord(OPENER_2, null);
+            submitWord(opener2, null);
         }
     }
 
@@ -267,6 +276,10 @@ public class MainActivity extends AppCompatActivity
             message(getString(R.string.no_file_picker));
             return true;
         }
+        if (id == R.id.settings) {
+            showSettings();
+            return true;
+        }
         if (id == R.id.check_update) {
             checkForUpdate();
             return true;
@@ -359,6 +372,102 @@ public class MainActivity extends AppCompatActivity
     private static void setStat(View content, int id, int value) {
         TextView view = content.findViewById(id);
         view.setText(String.valueOf(value));
+    }
+
+    // ---------------------------------------------------------------- Einstellungen
+
+    private void showSettings() {
+        View content = getLayoutInflater().inflate(R.layout.dialog_settings, null, false);
+        TextInputLayout opener1 = content.findViewById(R.id.opener_1_layout);
+        TextInputLayout opener2 = content.findViewById(R.id.opener_2_layout);
+        MaterialSwitch kidsMode = content.findViewById(R.id.kids_mode);
+        prepareOpenerField(opener1);
+        prepareOpenerField(opener2);
+        setText(opener1, Settings.opener1(this));
+        setText(opener2, Settings.opener2(this));
+        kidsMode.setChecked(Settings.kidsMode(this));
+
+        AlertDialog dialog = Dialogs.builder(this)
+                .setView(content)
+                .setPositiveButton(R.string.settings_save, null)
+                .setNegativeButton(R.string.cancel, null)
+                .setNeutralButton(R.string.settings_reset, null)
+                .show();
+        // Eigene Klick-Handler, damit der Dialog bei einem ungültigen Wort offen bleibt.
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+            setText(opener1, Settings.DEFAULT_OPENER_1);
+            setText(opener2, Settings.DEFAULT_OPENER_2);
+        });
+        Button save = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        save.setOnClickListener(v -> {
+            boolean valid = checkOpener(opener1) & checkOpener(opener2);
+            if (!valid) {
+                return;
+            }
+            boolean kidsBefore = Settings.kidsMode(this);
+            Settings.save(this, text(opener1), text(opener2), kidsMode.isChecked());
+            dialog.dismiss();
+            if (kidsBefore != kidsMode.isChecked()) {
+                // Ohne einen Versuch geht nichts verloren, dann gilt der Modus sofort.
+                if (game.getStatus() == Game.Status.PLAYING && game.getGuesses().isEmpty()
+                        && game.getCurrent().isEmpty()) {
+                    startNewGame();
+                } else {
+                    showGame();
+                }
+            }
+        });
+    }
+
+    /** Großbuchstaben wie auf dem Spielfeld, und ein Fehler verschwindet beim Weitertippen. */
+    private static void prepareOpenerField(TextInputLayout field) {
+        EditText edit = field.getEditText();
+        if (edit == null) {
+            return;
+        }
+        edit.setFilters(new InputFilter[]{
+                new InputFilter.AllCaps(), new InputFilter.LengthFilter(Game.WORD_LENGTH)});
+        edit.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                field.setError(null);
+            }
+        });
+    }
+
+    /** Prüft ein Startwort und zeigt den Fehler direkt am Feld. */
+    private boolean checkOpener(TextInputLayout field) {
+        String word = text(field);
+        if (word.length() != Game.WORD_LENGTH) {
+            field.setError(getString(R.string.settings_error_length));
+            return false;
+        }
+        if (!words.isAllowed(word)) {
+            field.setError(getString(R.string.settings_error_unknown));
+            return false;
+        }
+        field.setError(null);
+        return true;
+    }
+
+    private static String text(TextInputLayout field) {
+        return field.getEditText() == null || field.getEditText().getText() == null
+                ? "" : Settings.normalize(field.getEditText().getText().toString());
+    }
+
+    private static void setText(TextInputLayout field, String word) {
+        if (field.getEditText() != null) {
+            field.getEditText().setText(word);
+            field.setError(null);
+        }
     }
 
     // ---------------------------------------------------------------- Statistik exportieren/importieren

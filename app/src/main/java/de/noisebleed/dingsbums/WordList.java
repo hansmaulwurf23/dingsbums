@@ -15,19 +15,22 @@ import java.util.Random;
 import java.util.Set;
 
 /**
- * Die beiden Wortlisten aus den Assets, erzeugt von {@code tools/build_wordlists.py}: gesucht wird
- * nur unter den gebräuchlichen Wörtern, raten darf man jedes zulässige.
+ * Die Wortlisten aus den Assets, erzeugt von {@code tools/build_wordlists.py}: gesucht wird nur
+ * unter den gebräuchlichen Wörtern, im Kindermodus nur unter denen aus dem Grundschulwortschatz;
+ * raten darf man jedes zulässige.
  */
 public final class WordList {
 
     private static WordList instance;
 
     private final List<String> solutions;
+    private final List<String> kidSolutions;
     private final Set<String> allowed;
     private final Random random = new SecureRandom();
 
     private WordList(Context context) {
         solutions = read(context, "solutions.txt");
+        kidSolutions = read(context, "kids.txt");
         allowed = new HashSet<>(read(context, "guesses.txt"));
         allowed.addAll(solutions);
     }
@@ -44,14 +47,15 @@ public final class WordList {
     }
 
     /** Ein zufälliges Lösungswort, möglichst keins aus {@code recent}. */
-    public String randomSolution(Set<String> recent) {
+    public String randomSolution(Set<String> recent, boolean kidsMode) {
+        List<String> pool = kidsMode ? kidSolutions : solutions;
         for (int attempt = 0; attempt < 20; attempt++) {
-            String word = solutions.get(random.nextInt(solutions.size()));
+            String word = pool.get(random.nextInt(pool.size()));
             if (!recent.contains(word)) {
                 return word;
             }
         }
-        return solutions.get(random.nextInt(solutions.size()));
+        return pool.get(random.nextInt(pool.size()));
     }
 
     private static List<String> read(Context context, String asset) {

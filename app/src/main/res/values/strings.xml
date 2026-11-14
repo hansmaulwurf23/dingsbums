@@ -57,6 +57,19 @@
     <string name="import_failed">Import fehlgeschlagen: %1$s</string>
     <string name="no_file_picker">Auf diesem Gerät lassen sich keine Dateien auswählen.</string>
 
+    <string name="settings">Einstellungen</string>
+    <string name="settings_openers">Startwörter</string>
+    <string name="settings_openers_hint">Doppeltipp auf die leere erste oder zweite Zeile trägt diese Wörter ein.</string>
+    <string name="settings_opener_1">1. Zeile</string>
+    <string name="settings_opener_2">2. Zeile</string>
+    <string name="settings_kids_mode">Kindermodus</string>
+    <string name="settings_kids_mode_hint">Gesucht werden nur Wörter, die Kinder aus der Grundschule kennen. Raten darf man weiterhin jedes Wort. Gilt ab dem nächsten Wort.</string>
+    <string name="settings_save">Speichern</string>
+    <string name="settings_reset">Standard</string>
+    <string name="settings_error_length">Genau fünf Buchstaben</string>
+    <string name="settings_error_unknown">Kein bekanntes Wort</string>
+    <string name="kids_mode_subtitle">Kindermodus</string>
+
     <string name="check_update">Nach Update suchen</string>
     <string name="update_checking">Suche nach Updates …</string>
     <string name="update_none">Dingsbums ist aktuell (Version %1$s)</string>

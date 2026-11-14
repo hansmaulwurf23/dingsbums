@@ -11,8 +11,14 @@ Eine bebilderte Kurzbeschreibung steht in [`docs/README.md`](docs/README.md).
 - **Feld antippen** setzt den Cursor dorthin: Tippen überschreibt ab da und rückt weiter. Löschen
   entfernt den Buchstaben unter dem Cursor, ist das Feld leer, den links davon. Mit Lücken lässt
   sich nicht abschicken. Auf einer Hardware-Tastatur gehen auch die Pfeiltasten.
-- **Doppeltipp** auf die leere erste Zeile schickt AUTOS ab, auf die leere zweite REICH; ist dabei
-  auch die erste noch leer, kommen beide nacheinander. Mit schon getippten Buchstaben passiert nichts.
+- **Doppeltipp** auf die leere erste Zeile schickt das erste Startwort ab, auf die leere zweite das
+  zweite; ist dabei auch die erste noch leer, kommen beide nacheinander. Mit schon getippten
+  Buchstaben passiert nichts. Voreingestellt sind AUTOS und REICH.
+- **Einstellungen** (Menü): die beiden Startwörter (nur zulässige Wörter, „Standard“ stellt AUTOS
+  und REICH wieder her) und der **Kindermodus**. Der sucht nur Wörter aus dem Grundschulwortschatz
+  (`kids.txt`, siehe unten), raten darf man weiter jedes Wort. Er gilt ab dem nächsten Wort; ist in
+  der laufenden Runde noch nichts getippt, kommt sofort ein neues. Der Untertitel „Kindermodus“ zeigt,
+  dass er an ist. Die Statistik ist für beide Modi dieselbe.
 - Die Felder klappen nacheinander um und zeigen:
   **grün** — richtiger Buchstabe an der richtigen Stelle,
   **gelb** — Buchstabe kommt im Wort vor, aber woanders,
@@ -44,6 +50,11 @@ Die Listen liegen fertig in `app/src/main/assets/` und werden von `tools/build_w
   sind. Englische Lehnwörter (DADDY, STORY …) fliegen über das englische Wörterbuch raus, außer sie
   stehen in `tools/keep.txt`. Anstößiges, für Kinder Ungeeignetes, Nationalitäten und seltsam wirkende
   Grundformen stehen in `tools/block.txt` — raten lassen sie sich trotzdem, nur gesucht werden sie nie.
+- **`kids.txt`** (≈ 550 Wörter) — die Lösungswörter für den Kindermodus: die aus `solutions.txt`,
+  die auch in `tools/kids.txt` stehen. Die Liste ist von Hand ausgesucht: Wörter, die Kinder in der
+  Grundschule kennen sollten (APFEL, KATZE, WOLKE, nicht ABTEI oder FAZIT). Als Anhalt dienten die
+  Rechtschreib-Grundwortschätze der Länder Baden-Württemberg, Schleswig-Holstein und
+  Rheinland-Pfalz.
 
 Wörter mit ß bleiben ganz draußen (groß geschrieben würde daraus SS und das Wort zu lang).
 
@@ -138,7 +149,7 @@ gesetzt; damit liegt eine zweite Kopie des Schlüssels bei GitHub.
 
 ```bash
 # versionCode und versionName in app/build.gradle anheben, committen
-git tag -a v1.6 -m "Dingsbums 1.6" -m "- Was sich geändert hat" && git push origin main v1.6
+git tag -a v1.7 -m "Dingsbums 1.7" -m "- Was sich geändert hat" && git push origin main v1.7
 ```
 
 ## Lizenz

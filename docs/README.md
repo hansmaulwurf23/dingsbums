@@ -28,8 +28,8 @@ geht.
 <tr>
 <td><b>Start:</b> sechs Zeilen zu fünf Feldern; die blaue Zeile ist dran, der helle Rahmen zeigt,
 wo der nächste Buchstabe landet.</td>
-<td><b>Schneller Einstieg:</b> Doppeltipp auf die zweite Zeile trägt die Startwörter AUTOS und
-REICH ein.</td>
+<td><b>Schneller Einstieg:</b> Doppeltipp auf die zweite Zeile trägt die beiden Startwörter ein,
+voreingestellt AUTOS und REICH.</td>
 </tr>
 <tr>
 <td width="50%"><img src="screenshots/03-cursor.png" alt="Feld angetippt"></td>
@@ -56,6 +56,15 @@ hervorgehoben.</td>
 <td><b>Nicht gelöst:</b> Nach sechs Versuchen verrät die App das Wort.</td>
 <td><b>Über die App:</b> welche Version installiert ist und woher die Wörter kommen.</td>
 </tr>
+<tr>
+<td width="50%"><img src="screenshots/09-einstellungen.png" alt="Einstellungen"></td>
+<td></td>
+</tr>
+<tr>
+<td><b>Einstellungen:</b> eigene Startwörter für den Doppeltipp, und der Kindermodus für Wörter aus
+dem Grundschulwortschatz.</td>
+<td></td>
+</tr>
 </table>
 
 ## Kleine Details
@@ -63,6 +72,9 @@ hervorgehoben.</td>
 - **Kindgerechte Wörter:** Gesucht werden nur gebräuchliche Grundformen (BLUME, nicht BLUMEN).
   Namen, englische Wörter, Schimpfwörter und Wörter rund um Sex, Drogen, Gewalt oder schwere
   Krankheiten kommen als Lösung nicht vor.
+- **Kindermodus:** In den Einstellungen lässt sich die Suche auf gut 500 Wörter beschränken, die
+  Kinder aus der Grundschule kennen sollten, etwa APFEL, KATZE oder WOLKE. Raten darf man trotzdem
+  jedes Wort.
 - **Ehrliche Statistik:** Wer mitten in einer Runde ein neues Wort anfängt, gibt auf, und die Runde
   zählt als nicht gelöst. Ohne einen einzigen Versuch zählt sie nicht.
 - **Nichts geht verloren:** Die laufende Runde übersteht das Schließen der App, Statistik und Runde
